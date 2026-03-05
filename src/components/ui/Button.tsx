@@ -37,8 +37,7 @@ export function Button({
       type={type}
       disabled={disabled}
       onClick={onClick}
-      className={cn(base, sizes[size], variants[variant], className)}
-    >
+      className={cn(base, sizes[size], variants[variant], className)}>
       {children}
     </button>
   );

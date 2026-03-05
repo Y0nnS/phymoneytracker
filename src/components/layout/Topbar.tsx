@@ -35,8 +35,7 @@ export function Topbar() {
           <Button
             size="sm"
             onClick={() => window.dispatchEvent(new Event('moneytracker:add'))}
-            className="hidden sm:inline-flex"
-          >
+            className="hidden sm:inline-flex">
             {IconPlus({ className: 'h-4 w-4' })}
             Tambah
           </Button>
@@ -44,8 +43,7 @@ export function Topbar() {
             size="sm"
             onClick={() => window.dispatchEvent(new Event('moneytracker:add'))}
             className="h-9 w-9 px-0 sm:hidden"
-            aria-label="Tambah transaksi"
-          >
+            aria-label="Tambah transaksi">
             {IconPlus({ className: 'h-4 w-4' })}
           </Button>
         </div>

@@ -48,8 +48,7 @@ export default function SignInPage() {
 
         <form
           onSubmit={onSubmit}
-          className="flex flex-col gap-4 rounded-xl border border-zinc-800 bg-zinc-900 p-6"
-        >
+          className="flex flex-col gap-4 rounded-xl border border-zinc-800 bg-zinc-900 p-6">
           <Input
             label="Email"
             type="email"

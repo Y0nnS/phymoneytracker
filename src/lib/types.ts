@@ -12,7 +12,7 @@ export type Transaction = {
 export type TransactionCreateInput = Omit<Transaction, 'id'>;
 
 export type Budget = {
-  month: string; // YYYY-MM
+  month: string; 
   amount: number;
   updatedAt?: Date;
 };

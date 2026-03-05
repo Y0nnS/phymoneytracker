@@ -84,14 +84,12 @@ export default function SettingsPage() {
           <div className="mt-4 flex flex-wrap gap-2">
             <Link
               href="/app/transactions"
-              className="rounded-md border border-zinc-800 bg-zinc-950 px-3 py-2 text-sm font-semibold text-zinc-100 hover:bg-zinc-900"
-            >
+              className="rounded-md border border-zinc-800 bg-zinc-950 px-3 py-2 text-sm font-semibold text-zinc-100 hover:bg-zinc-900">
               Buka transaksi
             </Link>
             <Link
               href="/app/budget"
-              className="rounded-md border border-zinc-800 bg-zinc-950 px-3 py-2 text-sm font-semibold text-zinc-100 hover:bg-zinc-900"
-            >
+              className="rounded-md border border-zinc-800 bg-zinc-950 px-3 py-2 text-sm font-semibold text-zinc-100 hover:bg-zinc-900">
               Atur budget
             </Link>
           </div>
@@ -121,14 +119,12 @@ export default function SettingsPage() {
                   label="Tambah kategori"
                   value={expenseDraft}
                   onChange={(e) => setExpenseDraft(e.target.value)}
-                  placeholder="Misal: Coffee"
-                />
+                  placeholder="Misal: Coffee"/>
                 <Button
                   size="sm"
                   onClick={() => addCategory('expense')}
                   disabled={!expenseDraft.trim()}
-                  className="h-10"
-                >
+                  className="h-10">
                   Tambah
                 </Button>
               </div>
@@ -139,15 +135,13 @@ export default function SettingsPage() {
                   expenseCustom.map((c) => (
                     <span
                       key={c}
-                      className="inline-flex items-center gap-2 rounded-full border border-zinc-800 bg-zinc-950 px-3 py-1 text-xs font-semibold text-zinc-200"
-                    >
+                      className="inline-flex items-center gap-2 rounded-full border border-zinc-800 bg-zinc-950 px-3 py-1 text-xs font-semibold text-zinc-200">
                       {c}
                       <button
                         type="button"
                         onClick={() => removeCategory('expense', c)}
                         className="rounded-full px-1.5 py-0.5 text-zinc-400 hover:bg-zinc-900 hover:text-zinc-100"
-                        aria-label={`Hapus kategori ${c}`}
-                      >
+                        aria-label={`Hapus kategori ${c}`}>
                         ×
                       </button>
                     </span>
@@ -162,8 +156,7 @@ export default function SettingsPage() {
                   size="sm"
                   variant="secondary"
                   onClick={() => commitCategories('expense', [])}
-                  disabled={expenseCustom.length === 0}
-                >
+                  disabled={expenseCustom.length === 0}>
                   Reset
                 </Button>
               </div>
@@ -176,14 +169,12 @@ export default function SettingsPage() {
                   label="Tambah kategori"
                   value={incomeDraft}
                   onChange={(e) => setIncomeDraft(e.target.value)}
-                  placeholder="Misal: Bonus"
-                />
+                  placeholder="Misal: Bonus"/>
                 <Button
                   size="sm"
                   onClick={() => addCategory('income')}
                   disabled={!incomeDraft.trim()}
-                  className="h-10"
-                >
+                  className="h-10">
                   Tambah
                 </Button>
               </div>
@@ -194,15 +185,13 @@ export default function SettingsPage() {
                   incomeCustom.map((c) => (
                     <span
                       key={c}
-                      className="inline-flex items-center gap-2 rounded-full border border-zinc-800 bg-zinc-950 px-3 py-1 text-xs font-semibold text-zinc-200"
-                    >
+                      className="inline-flex items-center gap-2 rounded-full border border-zinc-800 bg-zinc-950 px-3 py-1 text-xs font-semibold text-zinc-200">
                       {c}
                       <button
                         type="button"
                         onClick={() => removeCategory('income', c)}
                         className="rounded-full px-1.5 py-0.5 text-zinc-400 hover:bg-zinc-900 hover:text-zinc-100"
-                        aria-label={`Hapus kategori ${c}`}
-                      >
+                        aria-label={`Hapus kategori ${c}`}>
                         ×
                       </button>
                     </span>
@@ -215,8 +204,7 @@ export default function SettingsPage() {
                   size="sm"
                   variant="secondary"
                   onClick={() => commitCategories('income', [])}
-                  disabled={incomeCustom.length === 0}
-                >
+                  disabled={incomeCustom.length === 0}>
                   Reset
                 </Button>
               </div>

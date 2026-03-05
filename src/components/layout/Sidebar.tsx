@@ -44,8 +44,7 @@ export function Sidebar() {
         </div>
         <Button
           onClick={() => window.dispatchEvent(new Event('moneytracker:add'))}
-          className="w-full justify-start"
-        >
+          className="w-full justify-start">
           <span className="inline-flex items-center gap-2">
             {IconPlus({ className: 'h-4 w-4' })}
             Tambah transaksi
@@ -68,14 +67,12 @@ export function Sidebar() {
                 active
                   ? 'bg-zinc-900 text-zinc-100 shadow-sm shadow-black/30 ring-1 ring-white/5'
                   : null,
-              )}
-            >
+              )}>
               <span
                 className={cn(
                   'flex h-9 w-9 items-center justify-center rounded-xl border border-transparent text-zinc-400 transition-[color,transform] group-hover:scale-[1.03] group-hover:text-zinc-100',
                   active ? 'border-zinc-800 bg-zinc-950 text-zinc-100' : null,
-                )}
-              >
+                )}>
                 {item.icon({ className: 'h-5 w-5' })}
               </span>
               <span className="min-w-0 truncate">{item.label}</span>
@@ -100,8 +97,7 @@ export function Sidebar() {
           variant="secondary"
           onClick={onSignOut}
           disabled={signingOut}
-          className="mt-4 w-full"
-        >
+          className="mt-4 w-full">
           {signingOut ? 'Keluar…' : 'Keluar'}
         </Button>
       </div>

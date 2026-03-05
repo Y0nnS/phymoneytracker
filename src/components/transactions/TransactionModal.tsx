@@ -146,8 +146,7 @@ export function TransactionModal({
               const list = categoriesForType(nextType);
               const last = readLocalStorageItem(`moneytracker:lastCategory:${nextType}`);
               setCategory(last && list.includes(last) ? last : list[0]);
-            }}
-          >
+            }}>
             <option value="expense">Expense</option>
             <option value="income">Income</option>
           </Select>
@@ -168,8 +167,7 @@ export function TransactionModal({
           <Select
             label="Kategori"
             value={category}
-            onChange={(e) => setCategory(e.target.value)}
-          >
+            onChange={(e) => setCategory(e.target.value)}>
             {categoriesForType(type).map((c) => (
               <option key={c} value={c}>
                 {c}

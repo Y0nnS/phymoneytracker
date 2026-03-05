@@ -40,14 +40,12 @@ export function MobileNav() {
               className={cn(
                 'flex flex-col items-center gap-1 px-2 py-3 text-xs font-semibold text-zinc-400',
                 active ? 'text-zinc-100' : 'hover:text-zinc-200',
-              )}
-            >
+              )}>
               <span
                 className={cn(
                   'flex h-9 w-9 items-center justify-center rounded-xl border border-transparent',
                   active ? 'border-zinc-800 bg-zinc-900' : 'bg-transparent',
-                )}
-              >
+                )}>
                 {item.icon({ className: 'h-5 w-5' })}
               </span>
               <span className="leading-none">{item.label}</span>
@@ -59,8 +57,7 @@ export function MobileNav() {
           type="button"
           onClick={() => window.dispatchEvent(new Event('moneytracker:add'))}
           className="flex flex-col items-center gap-1 px-2 py-2.5 text-xs font-semibold text-zinc-200"
-          aria-label="Tambah transaksi"
-        >
+          aria-label="Tambah transaksi">
           <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-sm shadow-black/50 ring-1 ring-white/10 transition-[transform,background-color] duration-150 active:translate-y-px active:shadow-none">
             {IconPlus({ className: 'h-5 w-5' })}
           </span>
@@ -80,14 +77,12 @@ export function MobileNav() {
               className={cn(
                 'flex flex-col items-center gap-1 px-2 py-3 text-xs font-semibold text-zinc-400',
                 active ? 'text-zinc-100' : 'hover:text-zinc-200',
-              )}
-            >
+              )}>
               <span
                 className={cn(
                   'flex h-9 w-9 items-center justify-center rounded-xl border border-transparent',
                   active ? 'border-zinc-800 bg-zinc-900' : 'bg-transparent',
-                )}
-              >
+                )}>
                 {item.icon({ className: 'h-5 w-5' })}
               </span>
               <span className="leading-none">{item.label}</span>

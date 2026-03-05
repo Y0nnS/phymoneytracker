@@ -37,8 +37,7 @@ export function ConfirmDialog({
             variant={confirmVariant}
             onClick={onConfirm}
             type="button"
-            disabled={confirming}
-          >
+            disabled={confirming}>
             {confirming ? 'Memproses…' : confirmText}
           </Button>
         </div>

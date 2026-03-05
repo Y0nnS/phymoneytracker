@@ -88,8 +88,7 @@ export function ExpenseByCategoryChart({
               <div className="flex min-w-0 items-center gap-2">
                 <span
                   className="h-2.5 w-2.5 shrink-0 rounded-sm"
-                  style={{ backgroundColor: colors[idx] }}
-                />
+                  style={{ backgroundColor: colors[idx] }}/>
                 <div className="truncate text-sm font-semibold">{item.category}</div>
               </div>
               <div className="shrink-0 text-sm text-zinc-300">

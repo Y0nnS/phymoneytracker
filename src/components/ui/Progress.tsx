@@ -24,8 +24,7 @@ export function Progress({
       className={cn(
         'h-2 w-full overflow-hidden rounded-full border border-zinc-800 bg-zinc-950',
         className,
-      )}
-    >
+      )}>
       <div
         className={cn('h-full rounded-full transition-[width] duration-300', barTone)}
         style={{ width: `${clamped * 100}%` }}

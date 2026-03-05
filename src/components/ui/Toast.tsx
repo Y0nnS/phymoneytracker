@@ -73,8 +73,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
       <div
         className="pointer-events-none fixed inset-x-0 bottom-3 z-[60] flex w-full justify-end px-3 md:bottom-5 md:px-6"
         aria-live="polite"
-        aria-relevant="additions"
-      >
+        aria-relevant="additions">
         <div className="flex w-full max-w-sm flex-col gap-2">
           {toasts.map((t) => (
             <div
@@ -90,8 +89,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
                   ? 'animate-[toast-out_180ms_ease-in_forwards]'
                   : 'animate-[toast-in_180ms_ease-out]',
               )}
-              role="status"
-            >
+              role="status">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   {t.title ? (
@@ -105,8 +103,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
                   type="button"
                   onClick={() => dismiss(t.id)}
                   className="rounded-md px-2 py-1 text-xs font-semibold text-white/70 hover:bg-white/10 hover:text-white"
-                  aria-label="Tutup notifikasi"
-                >
+                  aria-label="Tutup notifikasi">
                   Tutup
                 </button>
               </div>

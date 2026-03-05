@@ -66,8 +66,7 @@ export function Modal({
             : 'motion-safe:animate-[overlay-out_180ms_ease-in_forwards]',
         )}
         aria-label="Tutup"
-        onClick={onClose}
-      />
+        onClick={onClose}/>
       <div
         className={cn(
           'relative z-10 w-full max-w-lg rounded-2xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/60 ring-1 ring-white/5 motion-reduce:animate-none',
@@ -78,8 +77,7 @@ export function Modal({
         )}
         role="dialog"
         aria-modal="true"
-        aria-labelledby={titleId}
-      >
+        aria-labelledby={titleId}>
         <div className="mb-4 flex items-start justify-between gap-4">
           <div className="text-base font-semibold" id={titleId}>
             {title}
@@ -87,8 +85,7 @@ export function Modal({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-md px-2 py-1 text-sm font-semibold text-zinc-300 hover:bg-zinc-900"
-          >
+            className="rounded-md px-2 py-1 text-sm font-semibold text-zinc-300 hover:bg-zinc-900">
             Tutup
           </button>
         </div>

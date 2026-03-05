@@ -102,8 +102,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <Topbar />
           <div
             key={pathname}
-            className="flex-1 px-6 py-6 pb-24 motion-reduce:animate-none motion-safe:animate-[page-in_180ms_ease-out] md:pb-6"
-          >
+            className="flex-1 px-6 py-6 pb-24 motion-reduce:animate-none motion-safe:animate-[page-in_180ms_ease-out] md:pb-6">
             {children}
           </div>
         </div>

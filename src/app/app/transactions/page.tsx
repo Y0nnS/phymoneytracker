@@ -121,8 +121,7 @@ export default function TransactionsPage() {
             <Button
               variant="secondary"
               onClick={onExportCsv}
-              disabled={filtered.length === 0}
-            >
+              disabled={filtered.length === 0}>
               Export CSV
             </Button>
             <Button onClick={() => window.dispatchEvent(new Event('moneytracker:add'))}>
@@ -144,8 +143,7 @@ export default function TransactionsPage() {
               size="sm"
               variant="ghost"
               onClick={resetFilters}
-              disabled={!hasActiveFilters}
-            >
+              disabled={!hasActiveFilters}>
               Reset
             </Button>
           </div>
@@ -155,8 +153,7 @@ export default function TransactionsPage() {
               label="Bulan"
               type="month"
               value={monthId}
-              onChange={(e) => setMonthId(e.target.value)}
-            />
+              onChange={(e) => setMonthId(e.target.value)}/>
             <Select
               label="Tipe"
               value={typeFilter}
@@ -165,8 +162,7 @@ export default function TransactionsPage() {
                 if (value === 'all' || value === 'income' || value === 'expense') {
                   setTypeFilter(value);
                 }
-              }}
-            >
+              }}>
               <option value="all">Semua</option>
               <option value="income">Income</option>
               <option value="expense">Expense</option>
@@ -230,8 +226,7 @@ export default function TransactionsPage() {
                             t.type === 'income'
                               ? 'rounded-md border border-emerald-900/60 bg-emerald-950/30 px-2 py-0.5 text-[11px] font-semibold text-emerald-200'
                               : 'rounded-md border border-red-900/60 bg-red-950/30 px-2 py-0.5 text-[11px] font-semibold text-red-200'
-                          }
-                        >
+                          }>
                           {t.type === 'income' ? 'Income' : 'Expense'}
                         </span>
                       </div>
@@ -241,8 +236,7 @@ export default function TransactionsPage() {
                         t.type === 'income'
                           ? 'shrink-0 text-sm font-semibold text-emerald-300'
                           : 'shrink-0 text-sm font-semibold text-red-300'
-                      }
-                    >
+                      }>
                       {t.type === 'income' ? '+' : '-'}
                       {formatIDR(t.amount)}
                     </div>

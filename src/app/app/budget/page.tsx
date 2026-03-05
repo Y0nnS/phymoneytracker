@@ -116,8 +116,7 @@ export default function BudgetPage() {
               remaining !== null && remaining < 0
                 ? 'mt-2 text-xl font-semibold text-amber-200'
                 : 'mt-2 text-xl font-semibold'
-            }
-          >
+            }>
             {budgetAmount === null ? '—' : formatIDR(remaining ?? 0)}
           </div>
           <div className="mt-1 text-xs text-zinc-500">
@@ -178,8 +177,7 @@ export default function BudgetPage() {
               </Button>
               <Link
                 href="/app/transactions"
-                className="rounded-md border border-zinc-800 bg-zinc-950 px-4 py-2.5 text-sm font-semibold text-zinc-100 hover:bg-zinc-900"
-              >
+                className="rounded-md border border-zinc-800 bg-zinc-950 px-4 py-2.5 text-sm font-semibold text-zinc-100 hover:bg-zinc-900">
                 Lihat transaksi
               </Link>
             </div>

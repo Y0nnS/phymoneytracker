@@ -89,8 +89,7 @@ export default function DashboardPage() {
                   new CustomEvent('moneytracker:add', { detail: { type: 'expense' } }),
                 )
               }
-              className="h-10"
-            >
+              className="h-10">
               Tambah expense
             </Button>
             <Button
@@ -143,8 +142,7 @@ export default function DashboardPage() {
               net >= 0
                 ? 'mt-2 text-2xl font-semibold text-blue-200'
                 : 'mt-2 text-2xl font-semibold text-amber-200'
-            }
-          >
+            }>
             {formatIDR(net)}
           </div>
           <div className="mt-2 text-xs text-zinc-500">
@@ -165,8 +163,7 @@ export default function DashboardPage() {
             </div>
             <Link
               href="/app/budget"
-              className="rounded-md border border-zinc-800 bg-zinc-950 px-3 py-2 text-xs font-semibold text-zinc-100 hover:bg-zinc-900"
-            >
+              className="rounded-md border border-zinc-800 bg-zinc-950 px-3 py-2 text-xs font-semibold text-zinc-100 hover:bg-zinc-900">
               Atur
             </Link>
           </div>
@@ -206,16 +203,14 @@ export default function DashboardPage() {
             </div>
             <Link
               href="/app/transactions"
-              className="rounded-md border border-zinc-800 bg-zinc-950 px-3 py-2 text-xs font-semibold text-zinc-100 hover:bg-zinc-900"
-            >
+              className="rounded-md border border-zinc-800 bg-zinc-950 px-3 py-2 text-xs font-semibold text-zinc-100 hover:bg-zinc-900">
               Detail transaksi
             </Link>
           </div>
           <div className="mt-5">
             <CumulativeCashflowChart
               monthId={monthId}
-              monthTransactions={monthTransactions}
-            />
+              monthTransactions={monthTransactions}/>
           </div>
         </Card>
 
@@ -251,8 +246,7 @@ export default function DashboardPage() {
             </div>
             <Link
               href="/app/transactions"
-              className="rounded-md border border-zinc-800 bg-zinc-950 px-3 py-2 text-xs font-semibold text-zinc-100 hover:bg-zinc-900"
-            >
+              className="rounded-md border border-zinc-800 bg-zinc-950 px-3 py-2 text-xs font-semibold text-zinc-100 hover:bg-zinc-900">
               Lihat semua
             </Link>
           </div>
@@ -276,8 +270,7 @@ export default function DashboardPage() {
                       }),
                     )
                   }
-                  className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left hover:bg-zinc-950/40"
-                >
+                  className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left hover:bg-zinc-950/40">
                   <div className="min-w-0">
                     <div className="truncate text-sm font-semibold">
                       {t.category}
@@ -298,8 +291,7 @@ export default function DashboardPage() {
                       t.type === 'income'
                         ? 'text-sm font-semibold text-emerald-300'
                         : 'text-sm font-semibold text-red-300'
-                    }
-                  >
+                    }>
                     {t.type === 'income' ? '+' : '-'}
                     {formatIDR(t.amount)}
                   </div>

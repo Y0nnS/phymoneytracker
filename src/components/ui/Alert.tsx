@@ -17,8 +17,7 @@ export function Alert({
           ? 'border-red-900/60 bg-red-950/40 text-red-100'
           : 'border-zinc-800 bg-zinc-900 text-zinc-200',
         className,
-      )}
-    >
+      )}>
       {children}
     </div>
   );
