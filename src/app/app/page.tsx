@@ -14,7 +14,6 @@ import { useBudget } from '@/hooks/useBudget';
 import { formatIDR } from '@/lib/money';
 import { formatDateShort, monthIdFromDate } from '@/lib/date';
 import {
-  daysInMonthFromMonthId,
   expenseBreakdownByCategory,
   sumByType,
   transactionsForMonth,
@@ -55,9 +54,6 @@ export default function DashboardPage() {
           ? 'good'
           : 'warn'
         : 'danger';
-
-  const daysInMonth = React.useMemo(() => daysInMonthFromMonthId(monthId), [monthId]);
-  const avgDailyExpense = daysInMonth > 0 ? Math.round(expense / daysInMonth) : 0;
 
   const categoryBreakdown = React.useMemo(
     () => expenseBreakdownByCategory(monthTransactions),
