@@ -95,14 +95,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100">
+    <div className="min-h-screen overflow-x-hidden bg-zinc-950 text-zinc-100">
       <div className="flex w-full">
         <Sidebar />
-        <div className="flex min-h-screen flex-1 flex-col">
+        <div className="flex min-h-screen min-w-0 flex-1 flex-col">
           <Topbar />
           <div
             key={pathname}
-            className="flex-1 px-6 py-6 pb-24 motion-reduce:animate-none motion-safe:animate-[page-in_180ms_ease-out] md:pb-6">
+            className="flex-1 px-4 py-6 pb-24 motion-reduce:animate-none motion-safe:animate-[page-in_180ms_ease-out] sm:px-6 md:pb-6">
             {children}
           </div>
         </div>

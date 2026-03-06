@@ -4,12 +4,15 @@ import {
   collection,
   deleteDoc,
   doc,
+  getDocs,
   limit,
   onSnapshot,
   orderBy,
   query,
   serverTimestamp,
+  type QueryConstraint,
   updateDoc,
+  where,
 } from 'firebase/firestore';
 import { firestore } from './client';
 import type { Transaction, TransactionCreateInput } from '@/lib/types';
@@ -49,6 +52,37 @@ export function subscribeTransactions(
     },
     (err) => onError?.(err),
   );
+}
+
+export async function fetchTransactions(
+  uid: string,
+  {
+    startDate,
+    endDate,
+    limitCount = 600,
+  }: {
+    startDate?: Date;
+    endDate?: Date;
+    limitCount?: number;
+  } = {},
+) {
+  const constraints: QueryConstraint[] = [orderBy('date', 'desc')];
+
+  if (startDate) {
+    constraints.push(where('date', '>=', Timestamp.fromDate(startDate)));
+  }
+
+  if (endDate) {
+    constraints.push(where('date', '<=', Timestamp.fromDate(endDate)));
+  }
+
+  if (typeof limitCount === 'number' && Number.isFinite(limitCount) && limitCount > 0) {
+    constraints.push(limit(Math.round(limitCount)));
+  }
+
+  const q = query(collection(firestore, `users/${uid}/transactions`), ...constraints);
+  const snap = await getDocs(q);
+  return snap.docs.map((d) => mapTransaction(d.id, d.data()));
 }
 
 export async function addTransaction(uid: string, input: TransactionCreateInput) {

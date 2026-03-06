@@ -14,11 +14,13 @@ ensureChartJs();
 export function MonthlyNetChart({
   monthId,
   transactions,
+  rangeMonths = 6,
 }: {
   monthId: string;
   transactions: Transaction[];
+  rangeMonths?: number;
 }) {
-  const monthIds = React.useMemo(() => lastNMonthIds(monthId, 6), [monthId]);
+  const monthIds = React.useMemo(() => lastNMonthIds(monthId, rangeMonths), [monthId, rangeMonths]);
   const totals = React.useMemo(
     () => monthlyTotals(transactions, monthIds),
     [transactions, monthIds],

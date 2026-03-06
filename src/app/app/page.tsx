@@ -67,22 +67,22 @@ export default function DashboardPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-wrap items-end justify-between gap-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between">
         <div>
           <div className="text-sm text-zinc-400">Overview</div>
-          <h1 className="text-3xl font-semibold tracking-tight">Dashboard</h1>
+          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Dashboard</h1>
         </div>
-        <div className="flex flex-wrap items-end gap-3">
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-end sm:gap-3">
           <label className="flex flex-col gap-1.5">
             <span className="text-xs font-semibold text-zinc-400">Bulan</span>
             <input
               type="month"
               value={monthId}
               onChange={(e) => setMonthId(e.target.value)}
-              className="rounded-md border border-zinc-800 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+              className="w-full rounded-md border border-zinc-800 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 sm:w-auto"
             />
           </label>
-          <div className="flex items-center gap-2">
+          <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center sm:gap-2">
             <Button
               onClick={() =>
                 window.dispatchEvent(
@@ -90,7 +90,7 @@ export default function DashboardPage() {
                 )
               }
               className="h-10">
-              Tambah expense
+              + Expense
             </Button>
             <Button
               variant="secondary"
@@ -101,7 +101,7 @@ export default function DashboardPage() {
               }
               className="h-10 border-emerald-900 bg-emerald-950/40 text-emerald-100 hover:bg-emerald-950/70 focus:ring-emerald-500/30"
             >
-              Tambah income
+              + Income
             </Button>
           </div>
         </div>
@@ -109,55 +109,55 @@ export default function DashboardPage() {
 
       {txError ? <div className="text-sm text-zinc-400">{txError}</div> : null}
 
-      <div className="grid gap-4 lg:grid-cols-4">
-        <Card>
-          <div className="flex items-start justify-between gap-3">
-            <div>
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+        <Card className="p-4 sm:p-5">
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0">
               <div className="text-xs font-semibold text-zinc-400">Income</div>
-              <div className="mt-2 text-2xl font-semibold text-emerald-200">
+              <div className="mt-1.5 truncate text-lg font-semibold text-emerald-200 sm:mt-2 sm:text-2xl">
                 {formatIDR(income)}
               </div>
             </div>
-            <div className="rounded-xl border border-emerald-900/60 bg-emerald-950/40 px-3 py-2 text-xs font-semibold text-emerald-200">
+            <div className="hidden rounded-xl border border-emerald-900/60 bg-emerald-950/40 px-2 py-1 text-xs font-semibold text-emerald-200 sm:block sm:px-3 sm:py-2">
               Bulan ini
             </div>
           </div>
-          <div className="mt-2 text-xs text-zinc-500">
-            {monthTransactions.length} transaksi • fokus konsisten
+          <div className="mt-1.5 text-xs text-zinc-500 sm:mt-2">
+            {monthTransactions.length} transaksi
           </div>
         </Card>
-        <Card>
+        <Card className="p-4 sm:p-5">
           <div className="text-xs font-semibold text-zinc-400">Expense</div>
-          <div className="mt-2 text-2xl font-semibold text-red-200">
+          <div className="mt-1.5 truncate text-lg font-semibold text-red-200 sm:mt-2 sm:text-2xl">
             {formatIDR(expense)}
           </div>
-          <div className="mt-2 text-xs text-zinc-500">
-            Rata-rata {formatIDR(avgDailyExpense)}/hari • top: {topCategory}
+          <div className="mt-1.5 text-xs text-zinc-500 sm:mt-2">
+            Top: {topCategory}
           </div>
         </Card>
-        <Card>
+        <Card className="p-4 sm:p-5">
           <div className="text-xs font-semibold text-zinc-400">Net</div>
           <div
             className={
               net >= 0
-                ? 'mt-2 text-2xl font-semibold text-blue-200'
-                : 'mt-2 text-2xl font-semibold text-amber-200'
+                ? 'mt-1.5 truncate text-lg font-semibold text-blue-200 sm:mt-2 sm:text-2xl'
+                : 'mt-1.5 truncate text-lg font-semibold text-amber-200 sm:mt-2 sm:text-2xl'
             }>
             {formatIDR(net)}
           </div>
-          <div className="mt-2 text-xs text-zinc-500">
+          <div className="mt-1.5 text-xs text-zinc-500 sm:mt-2">
             {income > 0
-              ? `Saving rate: ${Math.round((net / income) * 100)}%`
-              : 'Tambahkan income untuk hitung saving rate'}
+              ? `Rate: ${Math.round((net / income) * 100)}%`
+              : '—'}
           </div>
         </Card>
-        <Card>
-          <div className="flex items-start justify-between gap-3">
-            <div>
+        <Card className="col-span-2 p-4 sm:col-span-1 sm:p-5">
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0">
               <div className="text-xs font-semibold text-zinc-400">
                 Budget Sisa
               </div>
-              <div className="mt-2 text-2xl font-semibold">
+              <div className="mt-1.5 truncate text-lg font-semibold sm:mt-2 sm:text-2xl">
                 {budgetAmount === null ? '—' : formatIDR(remainingBudget ?? 0)}
               </div>
             </div>
@@ -193,7 +193,7 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid gap-4 lg:grid-cols-12">
-        <Card className="lg:col-span-8">
+        <Card className="min-w-0 lg:col-span-8">
           <div className="flex items-start justify-between gap-4">
             <div>
               <div className="text-sm font-semibold">Cashflow (kumulatif)</div>
@@ -203,41 +203,41 @@ export default function DashboardPage() {
             </div>
             <Link
               href="/app/transactions"
-              className="rounded-md border border-zinc-800 bg-zinc-950 px-3 py-2 text-xs font-semibold text-zinc-100 hover:bg-zinc-900">
+              className="shrink-0 rounded-md border border-zinc-800 bg-zinc-950 px-3 py-2 text-xs font-semibold text-zinc-100 hover:bg-zinc-900">
               Detail transaksi
             </Link>
           </div>
-          <div className="mt-5">
+          <div className="mt-5 overflow-hidden">
             <CumulativeCashflowChart
               monthId={monthId}
               monthTransactions={monthTransactions}/>
           </div>
         </Card>
 
-        <Card className="lg:col-span-4">
+        <Card className="min-w-0 lg:col-span-4">
           <div className="text-sm font-semibold">Expense by category</div>
           <div className="mt-1 text-xs text-zinc-500">
             Breakdown expense bulan {monthId} (top kategori).
           </div>
-          <div className="mt-5">
+          <div className="mt-5 overflow-hidden">
             <ExpenseByCategoryChart monthTransactions={monthTransactions} />
           </div>
         </Card>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-12">
-        <Card className="lg:col-span-5">
+        <Card className="min-w-0 lg:col-span-5">
           <div className="text-sm font-semibold">Trend net 6 bulan</div>
           <div className="mt-1 text-xs text-zinc-500">
             Net (income - expense) untuk 6 bulan terakhir.
           </div>
-          <div className="mt-5">
+          <div className="mt-5 overflow-hidden">
             <MonthlyNetChart monthId={monthId} transactions={transactions} />
           </div>
         </Card>
 
         <Card className="lg:col-span-7 p-0">
-          <div className="flex items-center justify-between gap-4 border-b border-zinc-800 px-5 py-4">
+          <div className="flex items-center justify-between gap-3 border-b border-zinc-800 px-4 py-3 sm:px-5 sm:py-4">
             <div>
               <div className="text-sm font-semibold">Transaksi terbaru</div>
               <div className="text-xs text-zinc-500">
@@ -270,7 +270,7 @@ export default function DashboardPage() {
                       }),
                     )
                   }
-                  className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left hover:bg-zinc-950/40">
+                  className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left hover:bg-zinc-950/40 sm:px-5 sm:py-4">
                   <div className="min-w-0">
                     <div className="truncate text-sm font-semibold">
                       {t.category}
@@ -289,8 +289,8 @@ export default function DashboardPage() {
                   <div
                     className={
                       t.type === 'income'
-                        ? 'text-sm font-semibold text-emerald-300'
-                        : 'text-sm font-semibold text-red-300'
+                        ? 'shrink-0 text-sm font-semibold text-emerald-300'
+                        : 'shrink-0 text-sm font-semibold text-red-300'
                     }>
                     {t.type === 'income' ? '+' : '-'}
                     {formatIDR(t.amount)}
