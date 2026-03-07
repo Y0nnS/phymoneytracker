@@ -95,10 +95,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="min-h-screen overflow-x-hidden bg-zinc-950 text-zinc-100">
-      <div className="flex w-full">
+    <div className="h-dvh overflow-hidden bg-zinc-950 text-zinc-100">
+      <div className="flex h-full">
         <Sidebar />
-        <div className="flex min-h-screen min-w-0 flex-1 flex-col">
+        <div className="flex min-w-0 flex-1 flex-col overflow-y-auto overflow-x-hidden">
           <Topbar />
           <div
             key={pathname}
