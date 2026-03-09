@@ -71,8 +71,8 @@ export default function SettingsPage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <div className="text-sm text-zinc-400">Akun & Preferensi</div>
-        <h1 className="text-3xl font-semibold tracking-tight">Settings</h1>
+        <div className="text-[13px] text-zinc-400 sm:text-sm">Workspace & Preferences</div>
+        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Settings</h1>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-3">
@@ -81,16 +81,30 @@ export default function SettingsPage() {
           <div className="mt-2 text-sm text-zinc-300">
             Email: <span className="font-semibold">{user?.email ?? '—'}</span>
           </div>
+          <div className="mt-3 rounded-2xl border border-zinc-800 bg-zinc-950/40 p-4">
+            <div className="text-xs font-semibold uppercase tracking-[0.14em] text-zinc-500">
+              Product
+            </div>
+            <div className="mt-2 text-sm font-semibold text-zinc-100">Productivity Space</div>
+            <div className="mt-1 text-sm text-zinc-400">
+              Personal workspace untuk task, notes, planner, focus, dan finance.
+            </div>
+          </div>
           <div className="mt-4 flex flex-wrap gap-2">
             <Link
-              href="/app/transactions"
-              className="rounded-md border border-zinc-800 bg-zinc-950 px-3 py-2 text-sm font-semibold text-zinc-100 hover:bg-zinc-900">
-              Buka transaksi
+              href="/app/tasks"
+              className="rounded-md border border-zinc-800 bg-zinc-950 px-3 py-2 text-[13px] font-semibold text-zinc-100 hover:bg-zinc-900 sm:text-sm">
+              Buka tasks
             </Link>
             <Link
-              href="/app/budget"
-              className="rounded-md border border-zinc-800 bg-zinc-950 px-3 py-2 text-sm font-semibold text-zinc-100 hover:bg-zinc-900">
-              Atur budget
+              href="/app/planner"
+              className="rounded-md border border-zinc-800 bg-zinc-950 px-3 py-2 text-[13px] font-semibold text-zinc-100 hover:bg-zinc-900 sm:text-sm">
+              Buka planner
+            </Link>
+            <Link
+              href="/app/finance"
+              className="rounded-md border border-zinc-800 bg-zinc-950 px-3 py-2 text-[13px] font-semibold text-zinc-100 hover:bg-zinc-900 sm:text-sm">
+              Buka finance
             </Link>
           </div>
           <div className="mt-4">
@@ -105,7 +119,7 @@ export default function SettingsPage() {
 
         <Card className="lg:col-span-2">
           <div className="flex flex-col gap-1">
-            <div className="text-sm font-semibold">Kategori custom (opsional)</div>
+            <div className="text-sm font-semibold">Kategori finance custom (opsional)</div>
             <div className="text-xs text-zinc-500">
               Default kategori tetap ada. Custom kategori disimpan di browser (localStorage).
             </div>
@@ -114,7 +128,7 @@ export default function SettingsPage() {
           <div className="mt-5 grid gap-5 md:grid-cols-2">
             <div>
               <div className="text-xs font-semibold text-zinc-400">Expense</div>
-              <div className="mt-2 flex items-end gap-2">
+              <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-end">
                 <Input
                   label="Tambah kategori"
                   value={expenseDraft}
@@ -149,7 +163,7 @@ export default function SettingsPage() {
                 )}
               </div>
               <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
-                <div className="text-xs text-zinc-500">
+                <div className="text-[11px] text-zinc-500 sm:text-xs">
                   Default: {EXPENSE_CATEGORIES.join(', ')}
                 </div>
                 <Button
@@ -164,7 +178,7 @@ export default function SettingsPage() {
 
             <div>
               <div className="text-xs font-semibold text-zinc-400">Income</div>
-              <div className="mt-2 flex items-end gap-2">
+              <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-end">
                 <Input
                   label="Tambah kategori"
                   value={incomeDraft}
@@ -199,7 +213,7 @@ export default function SettingsPage() {
                 )}
               </div>
               <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
-                <div className="text-xs text-zinc-500">Default: {INCOME_CATEGORIES.join(', ')}</div>
+                <div className="text-[11px] text-zinc-500 sm:text-xs">Default: {INCOME_CATEGORIES.join(', ')}</div>
                 <Button
                   size="sm"
                   variant="secondary"
@@ -218,32 +232,37 @@ export default function SettingsPage() {
           <div className="text-sm font-semibold">Shortcut</div>
           <div className="mt-2 text-sm text-zinc-300">
             <div className="flex items-center justify-between gap-3">
-              <span>Tambah expense cepat</span>
+              <span>Quick capture</span>
               <span className="rounded-md border border-zinc-800 bg-zinc-950 px-2 py-1 text-xs font-semibold text-zinc-200">
-                N
+                Q
               </span>
             </div>
             <div className="mt-2 flex items-center justify-between gap-3">
-              <span>Tambah income cepat</span>
-              <span className="rounded-md border border-zinc-800 bg-zinc-950 px-2 py-1 text-xs font-semibold text-zinc-200">
-                Shift + N
-              </span>
+              <span>Tambah task cepat</span>
+              <Link
+                href="/app/tasks?compose=task"
+                className="rounded-md border border-zinc-800 bg-zinc-950 px-2 py-1 text-xs font-semibold text-zinc-200 hover:bg-zinc-900">
+                Open
+              </Link>
             </div>
           </div>
           <div className="mt-3 text-xs text-zinc-500">
-            Tips: klik transaksi terbaru di Dashboard untuk edit. Di halaman Transaksi ada Edit / Duplikat / Hapus.
+            Tips: pakai quick capture untuk masukin task, note, planner block, goal, atau transaksi dari halaman mana pun.
           </div>
         </Card>
 
         <Card>
-          <div className="text-sm font-semibold">Keamanan</div>
+          <div className="text-sm font-semibold">Arsitektur data</div>
           <div className="mt-2 text-sm text-zinc-300">
-            Registrasi publik dimatikan. Halaman <span className="font-semibold">/sign-up</span>{' '}
-            hanya menampilkan info.
+            Modul utama sekarang terbagi jadi <span className="font-semibold">tasks</span>,{' '}
+            <span className="font-semibold">notes</span>,{' '}
+            <span className="font-semibold">plannerBlocks</span>,{' '}
+            <span className="font-semibold">goals</span>,{' '}
+            <span className="font-semibold">focusSessions</span>, plus finance yang sudah ada.
           </div>
           <div className="mt-3 text-xs text-zinc-500">
-            Untuk ekstra aman, batasi akses Firestore di <span className="font-semibold">firestore.rules</span>{' '}
-            (misal hanya UID kamu).
+            Registrasi publik tetap dimatikan. Untuk ekstra aman, batasi akses di{' '}
+            <span className="font-semibold">firestore.rules</span> dan deploy rules terbaru ke Firebase.
           </div>
         </Card>
       </div>

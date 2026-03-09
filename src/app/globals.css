@@ -2,6 +2,68 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer components {
+  .app-surface {
+    @apply rounded-[24px] border border-white/10 bg-white/[0.02] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] backdrop-blur-sm sm:rounded-[28px];
+  }
+
+  .app-surface-subtle {
+    @apply rounded-[20px] border border-white/10 bg-zinc-950/45 sm:rounded-[22px];
+  }
+
+  .app-strip {
+    @apply app-surface overflow-hidden;
+  }
+
+  .app-strip-grid {
+    @apply grid divide-y divide-white/10 md:divide-y-0 md:divide-x;
+  }
+
+  .app-strip-cell {
+    @apply flex min-w-0 flex-col gap-1 px-3 py-3.5 sm:px-5 sm:py-4;
+  }
+
+  .app-panel-header {
+    @apply flex flex-col items-start gap-3 border-b border-white/10 px-4 py-3.5 sm:flex-row sm:justify-between sm:px-6 sm:py-4;
+  }
+
+  .app-list {
+    @apply divide-y divide-white/10;
+  }
+
+  .app-list-row {
+    @apply px-4 py-3.5 sm:px-6 sm:py-4;
+  }
+
+  .note-shell {
+    @apply grid min-h-[68vh] gap-3 xl:min-h-[72vh] xl:grid-cols-[340px_minmax(0,1fr)];
+  }
+
+  .note-sidebar {
+    @apply flex min-h-[68vh] flex-col overflow-hidden rounded-[24px] border border-white/10 bg-zinc-950/70 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)] sm:rounded-[30px] xl:min-h-[72vh];
+  }
+
+  .note-pane {
+    @apply min-h-[68vh] overflow-hidden rounded-[26px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(255,255,255,0.015))] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] sm:rounded-[34px] xl:min-h-[72vh];
+  }
+
+  .note-list-row {
+    @apply block border-l-2 border-transparent px-4 py-3.5 transition-colors hover:bg-white/[0.03] sm:px-5 sm:py-4;
+  }
+
+  .note-list-row-active {
+    @apply border-l-blue-500 bg-blue-500/[0.08];
+  }
+
+  .note-editor {
+    @apply rounded-[24px] border border-white/10 bg-zinc-950/50 px-4 py-4 sm:rounded-[28px] sm:px-6 sm:py-5;
+  }
+
+  .note-editor-area {
+    @apply min-h-[46vh] w-full resize-none border-0 bg-transparent p-0 text-[13px] leading-7 text-zinc-200 outline-none placeholder:text-zinc-600 sm:min-h-[52vh] sm:text-[15px] sm:leading-8;
+  }
+}
+
 html,
 body {
   height: 100%;

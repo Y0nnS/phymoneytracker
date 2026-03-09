@@ -33,14 +33,14 @@ export default function SignInPage() {
 
   return (
     <main className="min-h-screen bg-zinc-950 text-zinc-100">
-      <div className="mx-auto flex w-full max-w-md flex-col gap-6 px-6 py-16">
+      <div className="mx-auto flex w-full max-w-md flex-col gap-5 px-4 py-12 sm:gap-6 sm:px-6 sm:py-16">
         <div className="flex flex-col gap-2">
-          <Link href="/" className="text-sm font-semibold text-zinc-300">
+          <Link href="/" className="text-[13px] font-semibold text-zinc-300 sm:text-sm">
             ← Kembali
           </Link>
-          <h1 className="text-2xl font-semibold">Masuk</h1>
-          <p className="text-sm text-zinc-400">
-            Pakai email dan password yang sudah dibuat.
+          <h1 className="text-xl font-semibold sm:text-2xl">Masuk</h1>
+          <p className="text-[13px] text-zinc-400 sm:text-sm">
+            Masuk ke Productivity Space pakai email dan password yang sudah dibuat.
           </p>
         </div>
 
@@ -48,7 +48,7 @@ export default function SignInPage() {
 
         <form
           onSubmit={onSubmit}
-          className="flex flex-col gap-4 rounded-xl border border-zinc-800 bg-zinc-900 p-6">
+          className="flex flex-col gap-4 rounded-xl border border-zinc-800 bg-zinc-900 p-4 sm:p-6">
           <Input
             label="Email"
             type="email"
@@ -70,7 +70,7 @@ export default function SignInPage() {
             {loading ? 'Masuk…' : 'Masuk'}
           </Button>
           <div className="text-center text-sm text-zinc-500">
-            Registrasi dinonaktifkan (website personal).
+            Registrasi dinonaktifkan karena workspace ini untuk pemakaian pribadi.
           </div>
         </form>
       </div>

@@ -24,6 +24,26 @@ service cloud.firestore {
       match /budgets/{monthId} {
         allow read, write: if isOwner(uid);
       }
+
+      match /tasks/{taskId} {
+        allow read, write: if isOwner(uid);
+      }
+
+      match /notes/{noteId} {
+        allow read, write: if isOwner(uid);
+      }
+
+      match /goals/{goalId} {
+        allow read, write: if isOwner(uid);
+      }
+
+      match /plannerBlocks/{blockId} {
+        allow read, write: if isOwner(uid);
+      }
+
+      match /focusSessions/{sessionId} {
+        allow read, write: if isOwner(uid);
+      }
     }
   }
 }

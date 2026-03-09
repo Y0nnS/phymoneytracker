@@ -3,300 +3,382 @@
 import Link from 'next/link';
 import React from 'react';
 import { useAuth } from '@/components/auth/AuthProvider';
-import { CumulativeCashflowChart } from '@/components/charts/CumulativeCashflowChart';
-import { ExpenseByCategoryChart } from '@/components/charts/ExpenseByCategoryChart';
-import { MonthlyNetChart } from '@/components/charts/MonthlyNetChart';
+import { Alert } from '@/components/ui/Alert';
 import { Button } from '@/components/ui/Button';
-import { Card } from '@/components/ui/Card';
 import { Progress } from '@/components/ui/Progress';
-import { useTransactions } from '@/hooks/useTransactions';
 import { useBudget } from '@/hooks/useBudget';
-import { formatIDR } from '@/lib/money';
-import { formatDateShort, monthIdFromDate } from '@/lib/date';
-import {
-  expenseBreakdownByCategory,
-  sumByType,
-  transactionsForMonth,
-} from '@/lib/insights';
+import { useNotes } from '@/hooks/useNotes';
+import { useTasks } from '@/hooks/useTasks';
+import { useTransactions } from '@/hooks/useTransactions';
+import { formatDateShort, formatDateTime, monthIdFromDate, todayDateId } from '@/lib/date';
+import { transactionsForMonth, sumByType } from '@/lib/insights';
+import { formatIDRCompact } from '@/lib/money';
+import { priorityTone, sortTasks, taskStatusTone } from '@/lib/productivity';
 
-export default function DashboardPage() {
+function MetricCell({
+  title,
+  value,
+  subtitle,
+  toneClass = 'text-zinc-100',
+}: {
+  title: string;
+  value: string;
+  subtitle: string;
+  toneClass?: string;
+}) {
+  return (
+    <div className="app-strip-cell">
+      <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-zinc-500 sm:text-xs">
+        {title}
+      </div>
+      <div className={`mt-2 text-xl font-semibold tracking-tight sm:text-2xl ${toneClass}`}>{value}</div>
+      <div className="mt-1 text-[12px] text-zinc-400 sm:text-sm">{subtitle}</div>
+    </div>
+  );
+}
+
+function EmptyState({ message }: { message: string }) {
+  return <div className="app-list-row text-sm text-zinc-500">{message}</div>;
+}
+
+export default function WorkspacePage() {
   const { user } = useAuth();
-  const [monthId, setMonthId] = React.useState(() => monthIdFromDate(new Date()));
-  const { transactions, loading: txLoading, error: txError } = useTransactions(
-    user?.uid,
+  const monthId = React.useMemo(() => monthIdFromDate(new Date()), []);
+  const todayId = React.useMemo(() => todayDateId(), []);
+
+  const { tasks, error: taskError } = useTasks(user?.uid);
+  const { notes, error: noteError } = useNotes(user?.uid);
+  const { transactions, error: financeError } = useTransactions(user?.uid);
+  const { budget, error: budgetError } = useBudget(user?.uid, monthId);
+
+  const activeTasks = React.useMemo(
+    () => sortTasks(tasks).filter((task) => task.status !== 'done'),
+    [tasks],
   );
-  const { budget, loading: budgetLoading } = useBudget(user?.uid, monthId);
-
-  const monthTransactions = React.useMemo(() => {
-    return transactionsForMonth(transactions, monthId);
-  }, [transactions, monthId]);
-
-  const income = React.useMemo(
-    () => sumByType(monthTransactions, 'income'),
-    [monthTransactions],
+  const todayTasks = React.useMemo(
+    () =>
+      activeTasks.filter(
+        (task) =>
+          task.status === 'today' ||
+          task.status === 'in_progress' ||
+          (task.dueDate
+            ? task.dueDate.toDateString() === new Date(`${todayId}T00:00:00`).toDateString()
+            : false),
+      ),
+    [activeTasks, todayId],
+  );
+  const recentlyDone = React.useMemo(
+    () =>
+      sortTasks(tasks)
+        .filter((task) => task.status === 'done')
+        .slice(0, 4),
+    [tasks],
+  );
+  const noteDesk = React.useMemo(
+    () =>
+      notes
+        .slice()
+        .sort((a, b) => {
+          const pinnedDiff = Number(b.pinned) - Number(a.pinned);
+          if (pinnedDiff !== 0) return pinnedDiff;
+          const updatedA = a.updatedAt?.getTime() ?? a.createdAt?.getTime() ?? 0;
+          const updatedB = b.updatedAt?.getTime() ?? b.createdAt?.getTime() ?? 0;
+          return updatedB - updatedA;
+        })
+        .slice(0, 5),
+    [notes],
   );
 
-  const expense = React.useMemo(
-    () => sumByType(monthTransactions, 'expense'),
-    [monthTransactions],
+  const monthTransactions = React.useMemo(
+    () => transactionsForMonth(transactions, monthId),
+    [transactions, monthId],
   );
-
+  const income = React.useMemo(() => sumByType(monthTransactions, 'income'), [monthTransactions]);
+  const expense = React.useMemo(() => sumByType(monthTransactions, 'expense'), [monthTransactions]);
   const net = income - expense;
   const budgetAmount = budget?.amount ?? null;
-  const remainingBudget = budgetAmount === null ? null : budgetAmount - expense;
   const budgetRatio =
     budgetAmount && budgetAmount > 0 ? Math.min(1, expense / budgetAmount) : null;
   const budgetTone =
     budgetAmount === null
       ? 'neutral'
       : expense <= budgetAmount
-        ? expense / (budgetAmount || 1) <= 0.8
+        ? expense / budgetAmount <= 0.8
           ? 'good'
           : 'warn'
         : 'danger';
 
-  const categoryBreakdown = React.useMemo(
-    () => expenseBreakdownByCategory(monthTransactions),
-    [monthTransactions],
-  );
-  const topCategory = categoryBreakdown.items[0]?.category ?? '—';
+  const combinedErrors = [taskError, noteError, financeError, budgetError].filter(Boolean);
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between">
-        <div>
-          <div className="text-sm text-zinc-400">Overview</div>
-          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Dashboard</h1>
+      <section className="app-surface overflow-hidden bg-[radial-gradient(circle_at_top_left,_rgba(59,130,246,0.18),_transparent_38%),linear-gradient(135deg,rgba(24,24,27,0.76),rgba(9,9,11,0.94))] p-5 sm:p-8">
+        <div className="grid gap-5 sm:gap-8 xl:grid-cols-[minmax(0,1.2fr)_340px]">
+          <div className="max-w-2xl">
+            <div className="text-[13px] font-medium text-blue-200 sm:text-sm">Workspace overview</div>
+            <h1 className="mt-2 text-2xl font-semibold tracking-tight sm:text-4xl">
+              Productivity Space
+            </h1>
+            <p className="mt-3 text-[13px] leading-relaxed text-zinc-300 sm:text-base">
+              Dashboard utama buat ngelihat task penting, buka notepad aktif, dan pantau
+              uang masuk keluar tanpa kebanyakan layer.
+            </p>
+            <div className="mt-6 flex flex-wrap gap-2">
+              <Link href="/app/tasks?compose=task">
+                <Button>Task baru</Button>
+              </Link>
+              <Link href="/app/notes?compose=note">
+                <Button variant="secondary">Notepad baru</Button>
+              </Link>
+              <Link href="/app/finance">
+                <Button variant="secondary">Buka finance</Button>
+              </Link>
+            </div>
+          </div>
+
+          <div className="app-surface-subtle p-4 sm:p-5">
+            <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-zinc-500 sm:text-xs">
+              Snapshot hari ini
+            </div>
+            <div className="mt-4 space-y-4">
+              <div>
+                <div className="text-[13px] font-semibold text-zinc-100 sm:text-sm">Task fokus</div>
+                <div className="mt-1 text-[12px] text-zinc-400 sm:text-sm">
+                  {todayTasks.length > 0
+                    ? `${todayTasks.length} task aktif, ${todayTasks.filter((task) => task.priority === 'high').length} high priority`
+                    : 'Belum ada task prioritas untuk hari ini'}
+                </div>
+              </div>
+              <div className="border-t border-white/10 pt-4">
+                <div className="text-[13px] font-semibold text-zinc-100 sm:text-sm">Notepad aktif</div>
+                <div className="mt-1 text-[12px] text-zinc-400 sm:text-sm">
+                  {noteDesk.length > 0
+                    ? `${noteDesk.length} note terakhir siap dibuka lagi`
+                    : 'Mulai dari satu blank note untuk simpan ide'}
+                </div>
+              </div>
+              <div className="border-t border-white/10 pt-4 text-[12px] text-zinc-400 sm:text-sm">
+                Cashflow bulan ini:{' '}
+                <span className="font-semibold text-zinc-100">{formatIDRCompact(net)}</span>
+              </div>
+            </div>
+          </div>
         </div>
-        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-end sm:gap-3">
-          <label className="flex flex-col gap-1.5">
-            <span className="text-xs font-semibold text-zinc-400">Bulan</span>
-            <input
-              type="month"
-              value={monthId}
-              onChange={(e) => setMonthId(e.target.value)}
-              className="w-full rounded-md border border-zinc-800 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 sm:w-auto"
-            />
-          </label>
-          <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center sm:gap-2">
-            <Button
-              onClick={() =>
-                window.dispatchEvent(
-                  new CustomEvent('moneytracker:add', { detail: { type: 'expense' } }),
-                )
-              }
-              className="h-10">
-              + Expense
-            </Button>
-            <Button
-              variant="secondary"
-              onClick={() =>
-                window.dispatchEvent(
-                  new CustomEvent('moneytracker:add', { detail: { type: 'income' } }),
-                )
-              }
-              className="h-10 border-emerald-900 bg-emerald-950/40 text-emerald-100 hover:bg-emerald-950/70 focus:ring-emerald-500/30"
-            >
-              + Income
-            </Button>
-          </div>
+      </section>
+
+      {combinedErrors.length > 0 ? <Alert variant="danger">{combinedErrors[0]}</Alert> : null}
+
+      <section className="app-strip">
+        <div className="app-strip-grid lg:grid-cols-4">
+          <MetricCell
+            title="Today Tasks"
+            value={String(todayTasks.length)}
+            subtitle={
+              todayTasks.length > 0
+                ? `${todayTasks.filter((task) => task.priority === 'high').length} high priority`
+                : 'Inbox masih kosong'
+            }
+            toneClass="text-blue-200"
+          />
+          <MetricCell
+            title="Notes"
+            value={String(notes.length)}
+            subtitle={
+              notes.length > 0
+                ? `${noteDesk.filter((note) => note.pinned).length} pinned`
+                : 'Belum ada notepad'
+            }
+          />
+          <MetricCell
+            title="Net Month"
+            value={formatIDRCompact(net)}
+            subtitle={`${monthTransactions.length} transaksi`}
+            toneClass={net >= 0 ? 'text-emerald-200' : 'text-amber-200'}
+          />
+          <MetricCell
+            title="Budget"
+            value={
+              budgetAmount === null ? 'Draft' : `${Math.round((budgetRatio ?? 0) * 100)}%`
+            }
+            subtitle={budgetAmount === null ? 'Set budget bulan ini' : 'Budget usage'}
+          />
         </div>
-      </div>
+      </section>
 
-      {txError ? <div className="text-sm text-zinc-400">{txError}</div> : null}
-
-      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-        <Card className="p-4 sm:p-5">
-          <div className="flex items-start justify-between gap-2">
-            <div className="min-w-0">
-              <div className="text-xs font-semibold text-zinc-400">Income</div>
-              <div className="mt-1.5 truncate text-lg font-semibold text-emerald-200 sm:mt-2 sm:text-2xl">
-                {formatIDR(income)}
-              </div>
-            </div>
-            <div className="hidden rounded-xl border border-emerald-900/60 bg-emerald-950/40 px-2 py-1 text-xs font-semibold text-emerald-200 sm:block sm:px-3 sm:py-2">
-              Bulan ini
-            </div>
-          </div>
-          <div className="mt-1.5 text-xs text-zinc-500 sm:mt-2">
-            {monthTransactions.length} transaksi
-          </div>
-        </Card>
-        <Card className="p-4 sm:p-5">
-          <div className="text-xs font-semibold text-zinc-400">Expense</div>
-          <div className="mt-1.5 truncate text-lg font-semibold text-red-200 sm:mt-2 sm:text-2xl">
-            {formatIDR(expense)}
-          </div>
-          <div className="mt-1.5 text-xs text-zinc-500 sm:mt-2">
-            Top: {topCategory}
-          </div>
-        </Card>
-        <Card className="p-4 sm:p-5">
-          <div className="text-xs font-semibold text-zinc-400">Net</div>
-          <div
-            className={
-              net >= 0
-                ? 'mt-1.5 truncate text-lg font-semibold text-blue-200 sm:mt-2 sm:text-2xl'
-                : 'mt-1.5 truncate text-lg font-semibold text-amber-200 sm:mt-2 sm:text-2xl'
-            }>
-            {formatIDR(net)}
-          </div>
-          <div className="mt-1.5 text-xs text-zinc-500 sm:mt-2">
-            {income > 0
-              ? `Rate: ${Math.round((net / income) * 100)}%`
-              : '—'}
-          </div>
-        </Card>
-        <Card className="col-span-2 p-4 sm:col-span-1 sm:p-5">
-          <div className="flex items-start justify-between gap-2">
-            <div className="min-w-0">
-              <div className="text-xs font-semibold text-zinc-400">
-                Budget Sisa
-              </div>
-              <div className="mt-1.5 truncate text-lg font-semibold sm:mt-2 sm:text-2xl">
-                {budgetAmount === null ? '—' : formatIDR(remainingBudget ?? 0)}
-              </div>
-            </div>
-            <Link
-              href="/app/budget"
-              className="rounded-md border border-zinc-800 bg-zinc-950 px-3 py-2 text-xs font-semibold text-zinc-100 hover:bg-zinc-900">
-              Atur
-            </Link>
-          </div>
-          <div className="mt-1 text-xs text-zinc-500">
-            {budgetLoading
-              ? 'Memuat…'
-              : budgetAmount === null
-                ? 'Belum diset'
-                : `Total budget: ${formatIDR(budgetAmount)}`}
-          </div>
-          {budgetRatio !== null ? (
-            <div className="mt-3">
-              <Progress value={budgetRatio} tone={budgetTone} />
-              <div className="mt-2 flex items-center justify-between text-xs text-zinc-500">
-                <span>Terpakai: {Math.round(budgetRatio * 100)}%</span>
-                <span>
-                  {expense <= (budgetAmount || 0) ? 'Aman' : 'Melebihi budget'}
-                </span>
-              </div>
-            </div>
-          ) : (
-            <div className="mt-3 text-xs text-zinc-500">
-              Set budget untuk lihat progress.
-            </div>
-          )}
-        </Card>
-      </div>
-
-      <div className="grid gap-4 lg:grid-cols-12">
-        <Card className="min-w-0 lg:col-span-8">
-          <div className="flex items-start justify-between gap-4">
+      <section className="grid gap-5 xl:grid-cols-[minmax(0,1.1fr)_minmax(320px,.9fr)]">
+        <div className="app-surface overflow-hidden">
+          <div className="app-panel-header">
             <div>
-              <div className="text-sm font-semibold">Cashflow (kumulatif)</div>
+              <div className="text-sm font-semibold">Today queue</div>
               <div className="mt-1 text-xs text-zinc-500">
-                Income, expense, dan net kumulatif per hari di bulan {monthId}.
+                Task yang perlu kamu dorong hari ini.
               </div>
             </div>
             <Link
-              href="/app/transactions"
-              className="shrink-0 rounded-md border border-zinc-800 bg-zinc-950 px-3 py-2 text-xs font-semibold text-zinc-100 hover:bg-zinc-900">
-              Detail transaksi
+              href="/app/tasks"
+              className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-2 text-xs font-semibold text-zinc-100 transition-colors hover:bg-white/[0.05]">
+              Semua task
             </Link>
           </div>
-          <div className="mt-5 overflow-hidden">
-            <CumulativeCashflowChart
-              monthId={monthId}
-              monthTransactions={monthTransactions}/>
-          </div>
-        </Card>
-
-        <Card className="min-w-0 lg:col-span-4">
-          <div className="text-sm font-semibold">Expense by category</div>
-          <div className="mt-1 text-xs text-zinc-500">
-            Breakdown expense bulan {monthId} (top kategori).
-          </div>
-          <div className="mt-5 overflow-hidden">
-            <ExpenseByCategoryChart monthTransactions={monthTransactions} />
-          </div>
-        </Card>
-      </div>
-
-      <div className="grid gap-4 lg:grid-cols-12">
-        <Card className="min-w-0 lg:col-span-5">
-          <div className="text-sm font-semibold">Trend net 6 bulan</div>
-          <div className="mt-1 text-xs text-zinc-500">
-            Net (income - expense) untuk 6 bulan terakhir.
-          </div>
-          <div className="mt-5 overflow-hidden">
-            <MonthlyNetChart monthId={monthId} transactions={transactions} />
-          </div>
-        </Card>
-
-        <Card className="lg:col-span-7 p-0">
-          <div className="flex items-center justify-between gap-3 border-b border-zinc-800 px-4 py-3 sm:px-5 sm:py-4">
-            <div>
-              <div className="text-sm font-semibold">Transaksi terbaru</div>
-              <div className="text-xs text-zinc-500">
-                {monthId} • {monthTransactions.length} transaksi
-              </div>
-            </div>
-            <Link
-              href="/app/transactions"
-              className="rounded-md border border-zinc-800 bg-zinc-950 px-3 py-2 text-xs font-semibold text-zinc-100 hover:bg-zinc-900">
-              Lihat semua
-            </Link>
-          </div>
-
-          <div className="divide-y divide-zinc-800">
-            {txLoading ? (
-              <div className="px-5 py-4 text-sm text-zinc-400">Memuat…</div>
-            ) : monthTransactions.length === 0 ? (
-              <div className="px-5 py-4 text-sm text-zinc-400">
-                Belum ada transaksi di bulan ini. Klik “Tambah transaksi” untuk mulai.
-              </div>
+          <div className="app-list">
+            {todayTasks.length === 0 ? (
+              <EmptyState message="Belum ada task untuk hari ini." />
             ) : (
-              monthTransactions.slice(0, 8).map((t) => (
-                <button
-                  key={t.id}
-                  type="button"
-                  onClick={() =>
-                    window.dispatchEvent(
-                      new CustomEvent('moneytracker:edit', {
-                        detail: { transaction: t, mode: 'edit' },
-                      }),
-                    )
-                  }
-                  className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left hover:bg-zinc-950/40 sm:px-5 sm:py-4">
-                  <div className="min-w-0">
-                    <div className="truncate text-sm font-semibold">
-                      {t.category}
-                      {t.note ? (
-                        <span className="font-normal text-zinc-400">
-                          {' '}
-                          • {t.note}
-                        </span>
-                      ) : null}
+              todayTasks.slice(0, 5).map((task) => (
+                <div key={task.id} className="app-list-row">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <div className="text-sm font-semibold text-zinc-100">{task.title}</div>
+                      <div className="mt-1 text-xs text-zinc-500">
+                        {task.category}
+                        {task.dueDate ? ` • Due ${formatDateShort(task.dueDate)}` : ''}
+                      </div>
                     </div>
-                    <div className="text-xs text-zinc-500">
-                      {formatDateShort(t.date)} •{' '}
-                      {t.type === 'income' ? 'Income' : 'Expense'}
+                    <div className="flex flex-wrap gap-2">
+                      <span className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold ${taskStatusTone(task.status)}`}>
+                        {task.status.replace('_', ' ')}
+                      </span>
+                      <span className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold ${priorityTone(task.priority)}`}>
+                        {task.priority}
+                      </span>
                     </div>
                   </div>
-                  <div
-                    className={
-                      t.type === 'income'
-                        ? 'shrink-0 text-sm font-semibold text-emerald-300'
-                        : 'shrink-0 text-sm font-semibold text-red-300'
-                    }>
-                    {t.type === 'income' ? '+' : '-'}
-                    {formatIDR(t.amount)}
-                  </div>
-                </button>
+                  {task.description ? (
+                    <div className="mt-3 text-sm text-zinc-400">{task.description}</div>
+                  ) : null}
+                </div>
               ))
             )}
           </div>
-        </Card>
-      </div>
+        </div>
+
+        <div className="app-surface overflow-hidden">
+          <div className="app-panel-header">
+            <div>
+              <div className="text-sm font-semibold">Finance snapshot</div>
+              <div className="mt-1 text-xs text-zinc-500">{monthId} cashflow dan budget.</div>
+            </div>
+            <Link
+              href="/app/finance"
+              className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-2 text-xs font-semibold text-zinc-100 transition-colors hover:bg-white/[0.05]">
+              Buka finance
+            </Link>
+          </div>
+          <div className="grid gap-4 px-5 py-5 sm:px-6">
+            <div className="grid gap-3 sm:grid-cols-3 sm:gap-4">
+              <div>
+                <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-zinc-500 sm:text-xs">
+                  Income
+                </div>
+                <div className="mt-2 text-base font-semibold text-emerald-200 sm:text-lg">
+                  {formatIDRCompact(income)}
+                </div>
+              </div>
+              <div>
+                <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-zinc-500 sm:text-xs">
+                  Expense
+                </div>
+                <div className="mt-2 text-base font-semibold text-red-200 sm:text-lg">
+                  {formatIDRCompact(expense)}
+                </div>
+              </div>
+              <div>
+                <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-zinc-500 sm:text-xs">
+                  Budget
+                </div>
+                <div className="mt-2 text-base font-semibold text-zinc-100 sm:text-lg">
+                  {budgetAmount === null ? 'Draft' : `${Math.round((budgetRatio ?? 0) * 100)}%`}
+                </div>
+              </div>
+            </div>
+            {budgetRatio !== null ? (
+              <Progress value={budgetRatio} tone={budgetTone} />
+            ) : (
+              <div className="rounded-[22px] border border-dashed border-white/10 px-4 py-4 text-sm text-zinc-500">
+                Budget belum diset untuk bulan ini.
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
+
+      <section className="grid gap-5 xl:grid-cols-[minmax(0,1.05fr)_minmax(320px,.95fr)]">
+        <div className="app-surface overflow-hidden">
+          <div className="app-panel-header">
+            <div>
+              <div className="text-sm font-semibold">Notes desk</div>
+              <div className="mt-1 text-xs text-zinc-500">
+                Buka note terbaru langsung ke panel editor.
+              </div>
+            </div>
+            <Link
+              href="/app/notes"
+              className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-2 text-xs font-semibold text-zinc-100 transition-colors hover:bg-white/[0.05]">
+              Buka notes
+            </Link>
+          </div>
+          <div className="app-list">
+            {noteDesk.length === 0 ? (
+              <EmptyState message="Belum ada note yang bisa dibuka." />
+            ) : (
+              noteDesk.map((note) => (
+                <Link
+                  key={note.id}
+                  href={`/app/notes/${note.id}`}
+                  className="app-list-row block transition-colors hover:bg-white/[0.02]">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <div className="truncate text-sm font-semibold text-zinc-100">
+                          {note.title}
+                        </div>
+                        {note.pinned ? (
+                          <span className="rounded-full border border-blue-500/30 bg-blue-500/12 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-blue-100">
+                            Pin
+                          </span>
+                        ) : null}
+                      </div>
+                      <div className="mt-2 line-clamp-2 text-sm leading-relaxed text-zinc-400">
+                        {note.content || 'Belum ada isi note.'}
+                      </div>
+                    </div>
+                    <div className="shrink-0 text-[11px] font-medium text-zinc-500">
+                      {note.updatedAt ? formatDateTime(note.updatedAt) : 'Draft'}
+                    </div>
+                  </div>
+                </Link>
+              ))
+            )}
+          </div>
+        </div>
+
+        <div className="app-surface overflow-hidden">
+          <div className="app-panel-header">
+            <div>
+              <div className="text-sm font-semibold">Recently done</div>
+              <div className="mt-1 text-xs text-zinc-500">
+                Sedikit jejak progres biar kerjaan tetap kebaca.
+              </div>
+            </div>
+          </div>
+          <div className="app-list">
+            {recentlyDone.length === 0 ? (
+              <EmptyState message="Belum ada task yang selesai." />
+            ) : (
+              recentlyDone.map((task) => (
+                <div key={task.id} className="app-list-row">
+                  <div className="text-sm font-semibold text-zinc-100">{task.title}</div>
+                  <div className="mt-1 text-xs text-zinc-500">
+                    {task.completedAt
+                      ? `Selesai ${formatDateShort(task.completedAt)}`
+                      : 'Task selesai'}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      </section>
     </div>
   );
 }

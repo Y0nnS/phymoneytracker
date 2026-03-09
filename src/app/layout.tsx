@@ -9,8 +9,8 @@ import { ToastProvider } from '@/components/ui/Toast';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'MoneyTracker',
-  description: 'Money management sederhana dengan Firebase',
+  title: 'Productivity Space',
+  description: 'Personal workspace untuk task, notes, dan finance yang rapi.',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

@@ -5,18 +5,27 @@ import { usePathname } from 'next/navigation';
 import React from 'react';
 import { signOutUser } from '@/lib/firebase/auth';
 import { useAuth } from '@/components/auth/AuthProvider';
-import { IconGear, IconGrid, IconList, IconPlus, IconWallet } from '@/components/icons';
+import {
+  IconCheckSquare,
+  IconGear,
+  IconGrid,
+  IconNote,
+  IconPlus,
+  IconSpark,
+  IconWallet,
+} from '@/components/icons';
 import { Button } from '@/components/ui/Button';
 import { cn } from '@/lib/utils';
 
 const navItems = [
-  { href: '/app', label: 'Dashboard', icon: IconGrid },
-  { href: '/app/transactions', label: 'Transaksi', icon: IconList },
-  { href: '/app/budget', label: 'Budget', icon: IconWallet },
+  { href: '/app', label: 'Workspace', icon: IconGrid },
+  { href: '/app/tasks', label: 'Tasks', icon: IconCheckSquare },
+  { href: '/app/notes', label: 'Notes', icon: IconNote },
+  { href: '/app/finance', label: 'Finance', icon: IconWallet },
   { href: '/app/settings', label: 'Settings', icon: IconGear },
 ];
 
-export function Sidebar() {
+export function Sidebar({ onQuickCapture }: { onQuickCapture: () => void }) {
   const pathname = usePathname();
   const { user } = useAuth();
   const [signingOut, setSigningOut] = React.useState(false);
@@ -32,24 +41,37 @@ export function Sidebar() {
   }
 
   return (
-    <aside className="hidden w-64 shrink-0 border-r border-zinc-900 bg-zinc-950 md:sticky md:top-0 md:flex md:h-dvh md:self-start md:flex-col md:overflow-hidden">
+    <aside className="hidden w-72 shrink-0 border-r border-zinc-900 bg-zinc-950 md:sticky md:top-0 md:flex md:h-dvh md:self-start md:flex-col md:overflow-hidden">
       <div className="flex flex-col gap-4 px-5 py-6">
         <div className="flex items-center justify-between gap-3">
           <Link href="/app" className="text-sm font-semibold tracking-wide">
-            MoneyTracker
+            Productivity Space
           </Link>
-          <span className="rounded-md border border-zinc-800 bg-zinc-900 px-2 py-1 text-[10px] font-semibold text-zinc-300">
+          <span className="rounded-full border border-blue-900/60 bg-blue-950/30 px-2 py-1 text-[10px] font-semibold text-blue-200">
             Personal
           </span>
         </div>
-        <Button
-          onClick={() => window.dispatchEvent(new Event('moneytracker:add'))}
-          className="w-full justify-start">
+        <Button onClick={onQuickCapture} className="w-full justify-start">
           <span className="inline-flex items-center gap-2">
             {IconPlus({ className: 'h-4 w-4' })}
-            Tambah transaksi
+            Quick capture
           </span>
         </Button>
+        <div className="rounded-2xl border border-zinc-800 bg-zinc-900/70 p-4">
+          <div className="flex items-center gap-2 text-sm font-semibold text-zinc-100">
+            {IconSpark({ className: 'h-4 w-4 text-blue-300' })}
+            Daily workspace
+          </div>
+          <div className="mt-2 text-xs leading-relaxed text-zinc-400">
+            Tasks, notes, dan finance sekarang ada di satu tempat yang lebih ringkas.
+          </div>
+          <div className="mt-3 inline-flex items-center gap-2 rounded-full border border-zinc-800 bg-zinc-950 px-3 py-1 text-[11px] font-semibold text-zinc-300">
+            Shortcut
+            <span className="rounded-md border border-zinc-800 bg-zinc-900 px-2 py-0.5 text-zinc-100">
+              Q
+            </span>
+          </div>
+        </div>
       </div>
 
       <nav className="flex flex-1 flex-col gap-1 overflow-y-auto px-3 pb-4">
