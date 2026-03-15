@@ -1,4 +1,4 @@
-import { monthIdFromDate } from '@/lib/date';
+import { addDays, formatDayLabel, monthIdFromDate } from '@/lib/date';
 import type { Transaction, TransactionType } from '@/lib/types';
 
 function pad2(value: number) {
@@ -82,6 +82,44 @@ export function buildDailyCumulativeSeries(
     expenseCumulative,
     netCumulative,
   };
+}
+
+export function buildDailyExpenseSeries(
+  transactions: Transaction[],
+  startDate: Date,
+  endDate: Date,
+) {
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  start.setHours(0, 0, 0, 0);
+  end.setHours(0, 0, 0, 0);
+
+  if (end < start) {
+    return { labels: [], values: [] };
+  }
+
+  const expenseByDay = new Map<string, number>();
+  for (const tx of transactions) {
+    if (tx.type !== 'expense') continue;
+    const day = new Date(tx.date);
+    day.setHours(0, 0, 0, 0);
+    if (day < start || day > end) continue;
+    const key = dateKeyLocal(day);
+    expenseByDay.set(key, (expenseByDay.get(key) ?? 0) + tx.amount);
+  }
+
+  const totalDays = Math.floor((end.getTime() - start.getTime()) / 86400000) + 1;
+  const labels: string[] = [];
+  const values: number[] = [];
+
+  for (let i = 0; i < totalDays; i += 1) {
+    const day = addDays(start, i);
+    const key = dateKeyLocal(day);
+    labels.push(formatDayLabel(key));
+    values.push(expenseByDay.get(key) ?? 0);
+  }
+
+  return { labels, values };
 }
 
 export function expenseBreakdownByCategory(monthTransactions: Transaction[]) {

@@ -7,7 +7,6 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { CumulativeCashflowChart } from '@/components/charts/CumulativeCashflowChart';
 import { ExpenseByCategoryChart } from '@/components/charts/ExpenseByCategoryChart';
-import { MonthlyNetChart } from '@/components/charts/MonthlyNetChart';
 import { TransactionModal } from '@/components/transactions/TransactionModal';
 import { Alert } from '@/components/ui/Alert';
 import { Button } from '@/components/ui/Button';
@@ -34,6 +33,15 @@ function csvEscape(value: string) {
   const safe = value.replaceAll('"', '""');
   return `"${safe}"`;
 }
+
+const CASHFLOW_RANGES = [
+  { id: '7d', label: '7d' },
+  { id: '1m', label: '1 bulan' },
+  { id: '3m', label: '3 bulan' },
+  { id: '6m', label: '6 bulan' },
+] as const;
+
+type CashflowRange = (typeof CASHFLOW_RANGES)[number]['id'];
 
 function FinanceCell({
   title,
@@ -70,6 +78,7 @@ export default function FinancePage() {
   const [amount, setAmount] = React.useState('');
   const [savingBudget, setSavingBudget] = React.useState(false);
   const [saveError, setSaveError] = React.useState<string | null>(null);
+  const [cashflowRange, setCashflowRange] = React.useState<CashflowRange>('1m');
 
   const [modalOpen, setModalOpen] = React.useState(false);
   const [modalMode, setModalMode] = React.useState<'create' | 'edit' | 'duplicate'>('create');
@@ -304,15 +313,30 @@ export default function FinancePage() {
         <section className="app-surface overflow-hidden">
           <div className="app-panel-header">
             <div>
-              <div className="text-sm font-semibold">Cashflow kumulatif</div>
+              <div className="text-sm font-semibold">Cashflow pengeluaran harian</div>
               <div className="mt-1 text-xs text-zinc-500">
-                Ringkasan income, expense, dan net per hari.
+                Naik-turun expense per hari sesuai rentang yang dipilih.
               </div>
             </div>
-            <div className="text-xs text-zinc-500">{monthId}</div>
+            <div className="w-full sm:w-[160px]">
+              <Select
+                aria-label="Pilih rentang cashflow"
+                value={cashflowRange}
+                onChange={(e) => setCashflowRange(e.target.value as CashflowRange)}>
+                {CASHFLOW_RANGES.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.label}
+                  </option>
+                ))}
+              </Select>
+            </div>
           </div>
           <div className="px-5 py-5 sm:px-6">
-            <CumulativeCashflowChart monthId={monthId} monthTransactions={monthTransactions} />
+            <CumulativeCashflowChart
+              monthId={monthId}
+              transactions={transactions}
+              range={cashflowRange}
+            />
           </div>
         </section>
 
@@ -329,76 +353,62 @@ export default function FinancePage() {
         </section>
       </div>
 
-      <div className="grid gap-5 xl:grid-cols-[minmax(0,.9fr)_minmax(360px,1.1fr)]">
-        <section className="app-surface overflow-hidden">
+      <section className="app-surface overflow-hidden">
+        <form onSubmit={onSaveBudget} className="flex flex-col gap-4">
           <div className="app-panel-header">
             <div>
-              <div className="text-sm font-semibold">Trend 6 bulan</div>
-              <div className="mt-1 text-xs text-zinc-500">Net bulanan untuk lihat momentum keuangan.</div>
+              <div className="text-sm font-semibold">Budget control</div>
+              <div className="mt-1 text-xs text-zinc-500">
+                {budgetLoading ? 'Memuat budget…' : 'Atur batas pengeluaran bulanan.'}
+              </div>
+            </div>
+            <div className="text-left text-xs text-zinc-500 sm:text-right">
+              {budgetAmount === null
+                ? 'Belum ada budget'
+                : `${Math.round((budgetRatio ?? 0) * 100)}% terpakai`}
             </div>
           </div>
-          <div className="px-5 py-5 sm:px-6">
-            <MonthlyNetChart monthId={monthId} transactions={transactions} />
+          <div className="grid gap-4 px-4 pb-4 sm:px-6 sm:pb-5">
+            <div className="grid gap-4 md:grid-cols-[1fr_auto]">
+              <Input
+                label="Budget (IDR)"
+                type="number"
+                min={0}
+                step={1}
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                placeholder="3000000"
+                required
+              />
+              <div className="flex items-end">
+                <Button type="submit" disabled={savingBudget}>
+                  {savingBudget ? 'Menyimpan…' : 'Simpan budget'}
+                </Button>
+              </div>
+            </div>
+            <div className="app-strip overflow-hidden">
+              <div className="app-strip-grid md:grid-cols-3">
+                <div className="app-strip-cell">
+                  <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-zinc-500 sm:text-xs">Terpakai</div>
+                  <div className="mt-2 text-base font-semibold sm:text-lg">{formatIDR(expense)}</div>
+                </div>
+                <div className="app-strip-cell">
+                  <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-zinc-500 sm:text-xs">Sisa</div>
+                  <div className="mt-2 text-base font-semibold sm:text-lg">
+                    {budgetAmount === null ? '—' : formatIDR(budgetAmount - expense)}
+                  </div>
+                </div>
+                <div className="app-strip-cell">
+                  <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-zinc-500 sm:text-xs">Status</div>
+                  <div className="mt-2 text-base font-semibold sm:text-lg">
+                    {budgetAmount === null ? 'Draft' : expense <= budgetAmount ? 'Aman' : 'Over'}
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
-        </section>
-
-        <section className="app-surface overflow-hidden">
-          <form onSubmit={onSaveBudget} className="flex flex-col gap-4">
-            <div className="app-panel-header">
-              <div>
-                <div className="text-sm font-semibold">Budget control</div>
-                <div className="mt-1 text-xs text-zinc-500">
-                  {budgetLoading ? 'Memuat budget…' : 'Atur batas pengeluaran bulanan.'}
-                </div>
-              </div>
-              <div className="text-left text-xs text-zinc-500 sm:text-right">
-                {budgetAmount === null
-                  ? 'Belum ada budget'
-                  : `${Math.round((budgetRatio ?? 0) * 100)}% terpakai`}
-              </div>
-            </div>
-            <div className="grid gap-4 px-4 pb-4 sm:px-6 sm:pb-5">
-              <div className="grid gap-4 md:grid-cols-[1fr_auto]">
-                <Input
-                  label="Budget (IDR)"
-                  type="number"
-                  min={0}
-                  step={1}
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  placeholder="3000000"
-                  required
-                />
-                <div className="flex items-end">
-                  <Button type="submit" disabled={savingBudget}>
-                    {savingBudget ? 'Menyimpan…' : 'Simpan budget'}
-                  </Button>
-                </div>
-              </div>
-              <div className="app-strip overflow-hidden">
-                <div className="app-strip-grid md:grid-cols-3">
-                  <div className="app-strip-cell">
-                    <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-zinc-500 sm:text-xs">Terpakai</div>
-                    <div className="mt-2 text-base font-semibold sm:text-lg">{formatIDR(expense)}</div>
-                  </div>
-                  <div className="app-strip-cell">
-                    <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-zinc-500 sm:text-xs">Sisa</div>
-                    <div className="mt-2 text-base font-semibold sm:text-lg">
-                      {budgetAmount === null ? '—' : formatIDR(budgetAmount - expense)}
-                    </div>
-                  </div>
-                  <div className="app-strip-cell">
-                    <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-zinc-500 sm:text-xs">Status</div>
-                    <div className="mt-2 text-base font-semibold sm:text-lg">
-                      {budgetAmount === null ? 'Draft' : expense <= budgetAmount ? 'Aman' : 'Over'}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </form>
-        </section>
-      </div>
+        </form>
+      </section>
 
       <section className="app-surface overflow-hidden">
         <div className="app-panel-header">
