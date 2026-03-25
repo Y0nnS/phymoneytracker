@@ -12,7 +12,6 @@ import {
   IconGrid,
   IconNote,
   IconPlus,
-  IconSpark,
   IconWallet,
 } from '@/components/icons';
 import { Button } from '@/components/ui/Button';

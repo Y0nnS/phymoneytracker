@@ -141,7 +141,7 @@ export default function WorkspacePage() {
 
           <div className="app-surface-subtle p-4 sm:p-5">
             <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-zinc-500 sm:text-xs">
-              Today's snapshot
+              Today snapshot
             </div>
             <div className="mt-4 space-y-4">
               <div>
@@ -203,7 +203,7 @@ export default function WorkspacePage() {
             value={
               budgetAmount === null ? 'Draft' : `${Math.round((budgetRatio ?? 0) * 100)}%`
             }
-            subtitle={budgetAmount === null ? "Set this month's budget" : 'Budget usage'}
+            subtitle={budgetAmount === null ? 'Set this month budget' : 'Budget usage'}
           />
         </div>
       </section>

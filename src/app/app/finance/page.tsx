@@ -23,7 +23,6 @@ import { setBudgetForMonth } from '@/lib/firebase/budgets';
 import { deleteTransaction } from '@/lib/firebase/transactions';
 import {
   dateKeyLocal,
-  expenseBreakdownByCategory,
   sumByType,
   transactionsForMonth,
 } from '@/lib/insights';
@@ -148,12 +147,6 @@ export default function FinancePage() {
           ? 'good'
           : 'warn'
         : 'danger';
-
-  const categoryBreakdown = React.useMemo(
-    () => expenseBreakdownByCategory(monthTransactions),
-    [monthTransactions],
-  );
-  const topCategory = categoryBreakdown.items[0]?.category ?? '—';
 
   function clearComposeParam() {
     if (searchParams.get('compose')) router.replace(pathname);
