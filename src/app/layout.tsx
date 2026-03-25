@@ -1,23 +1,23 @@
 import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
+import { Space_Grotesk } from 'next/font/google';
 import { Suspense } from 'react';
 import './globals.css';
 import { AuthProvider } from '@/components/auth/AuthProvider';
 import { FirebaseAnalytics } from '@/components/analytics/FirebaseAnalytics';
 import { ToastProvider } from '@/components/ui/Toast';
 
-const inter = Inter({ subsets: ['latin'] });
+const spaceGrotesk = Space_Grotesk({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
   title: 'Productivity Space',
-  description: 'Personal workspace untuk task, notes, dan finance yang rapi.',
+  description: 'A personal workspace for tasks, notes, and finance in one place.',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="id" className="h-full">
+    <html lang="en" className="h-full">
       <body
-        className={`${inter.className} h-full bg-zinc-950 text-zinc-100 antialiased`}
+        className={`${spaceGrotesk.className} h-full bg-zinc-950 text-zinc-100 antialiased`}
       >
         <Suspense fallback={null}>
           <FirebaseAnalytics />

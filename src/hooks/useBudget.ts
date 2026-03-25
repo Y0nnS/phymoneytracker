@@ -26,7 +26,7 @@ export function useBudget(uid: string | undefined, monthId: string) {
         setLoading(false);
       },
       (err) => {
-        setError(err instanceof Error ? err.message : 'Gagal memuat budget.');
+        setError(err instanceof Error ? err.message : 'Failed to load budget.');
         setLoading(false);
       },
     );

@@ -1,14 +1,14 @@
 import { FirebaseError } from 'firebase/app';
 
 const AUTH_ERROR_MESSAGES: Record<string, string> = {
-  'auth/invalid-email': 'Email tidak valid.',
-  'auth/invalid-credential': 'Email atau password salah.',
-  'auth/wrong-password': 'Email atau password salah.',
-  'auth/user-not-found': 'Akun tidak ditemukan.',
-  'auth/email-already-in-use': 'Email sudah terdaftar.',
-  'auth/weak-password': 'Password terlalu lemah (minimal 6 karakter).',
+  'auth/invalid-email': 'Email address is invalid.',
+  'auth/invalid-credential': 'Email or password is incorrect.',
+  'auth/wrong-password': 'Email or password is incorrect.',
+  'auth/user-not-found': 'Account not found.',
+  'auth/email-already-in-use': 'Email is already registered.',
+  'auth/weak-password': 'Password is too weak (min 6 characters).',
   'auth/too-many-requests':
-    'Terlalu banyak percobaan. Coba lagi beberapa saat.',
+    'Too many attempts. Please try again later.',
 };
 
 export function getFirebaseErrorMessage(error: unknown) {
@@ -16,6 +16,6 @@ export function getFirebaseErrorMessage(error: unknown) {
     return AUTH_ERROR_MESSAGES[error.code] ?? error.message;
   }
   if (error instanceof Error) return error.message;
-  return 'Terjadi kesalahan. Coba lagi.';
+  return 'Something went wrong. Please try again.';
 }
 

@@ -25,7 +25,7 @@ export function useFocusSessions(uid: string | undefined) {
         setLoading(false);
       },
       (err) => {
-        setError(err instanceof Error ? err.message : 'Gagal memuat focus sessions.');
+        setError(err instanceof Error ? err.message : 'Failed to load focus sessions.');
         setLoading(false);
       },
     );

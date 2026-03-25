@@ -7,23 +7,23 @@ import { Modal } from '@/components/ui/Modal';
 const ACTIONS = [
   {
     href: '/app/tasks?compose=task',
-    title: 'Task baru',
-    description: 'Tangkap tugas, prioritas, dan deadline dalam satu langkah.',
+    title: 'New task',
+    description: 'Capture tasks, priorities, and deadlines in one step.',
   },
   {
     href: '/app/notes?compose=note',
-    title: 'Notepad baru',
-    description: 'Buka draft kosong langsung di panel note sebelah kanan.',
+    title: 'New note',
+    description: 'Open a blank draft in the right-side editor.',
   },
   {
     href: '/app/finance?compose=transaction',
-    title: 'Transaksi',
-    description: 'Catat income atau expense tanpa keluar dari workspace.',
+    title: 'Transaction',
+    description: 'Log income or expense without leaving the workspace.',
   },
   {
     href: '/app/finance',
-    title: 'Buka finance',
-    description: 'Lihat cashflow, budget, dan histori keuangan bulanan.',
+    title: 'Open finance',
+    description: 'Review monthly cashflow, budget, and history.',
   },
 ];
 
@@ -45,7 +45,7 @@ export function QuickCaptureModal({
     <Modal open={open} title="Quick Capture" onClose={onClose} className="max-w-2xl">
       <div className="flex flex-col gap-4">
         <div className="text-sm text-zinc-400">
-          Satu pintu untuk masukin hal penting ke workspace kamu.
+          One entry point to capture the important stuff in your workspace.
         </div>
         <div className="grid gap-3 sm:grid-cols-2">
           {ACTIONS.map((action) => (
@@ -60,14 +60,14 @@ export function QuickCaptureModal({
           ))}
         </div>
         <div className="flex items-center justify-between gap-3 rounded-2xl border border-zinc-800 bg-zinc-900/50 px-4 py-3 text-xs text-zinc-500">
-          <span>Shortcut cepat</span>
+          <span>Quick shortcut</span>
           <span className="rounded-md border border-zinc-800 bg-zinc-950 px-2 py-1 font-semibold text-zinc-200">
             Q
           </span>
         </div>
         <div className="flex justify-end">
           <Button variant="secondary" onClick={onClose}>
-            Tutup
+            Close
           </Button>
         </div>
       </div>

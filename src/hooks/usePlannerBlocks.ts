@@ -25,7 +25,7 @@ export function usePlannerBlocks(uid: string | undefined) {
         setLoading(false);
       },
       (err) => {
-        setError(err instanceof Error ? err.message : 'Gagal memuat planner.');
+        setError(err instanceof Error ? err.message : 'Failed to load planner.');
         setLoading(false);
       },
     );

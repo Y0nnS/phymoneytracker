@@ -21,7 +21,7 @@ export default function HomePage() {
               <Link
                 href="/sign-in"
                 className="rounded-md border border-zinc-800 bg-zinc-900 px-3 py-2 text-[13px] font-medium text-zinc-100 hover:bg-zinc-800 sm:px-4 sm:text-sm">
-                Masuk
+                Sign in
               </Link>
             </div>
           </header>
@@ -32,18 +32,18 @@ export default function HomePage() {
                 Productivity Space
               </h1>
               <p className="max-w-2xl text-pretty text-[13px] leading-relaxed text-zinc-300 sm:text-base md:text-lg">
-                Tempat dimana rasa malas dilarang masuk.
+                A workspace where distractions are not invited.
               </p>
               <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:gap-3">
                 <Link
                   href="/sign-in"
                   className="rounded-md bg-blue-600 px-5 py-2.5 text-center text-sm font-semibold text-white shadow-sm shadow-black/40 hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30 sm:text-left">
-                  Masuk ke Workspace
+                  Enter workspace
                 </Link>
                 <Link
                   href="#preview"
                   className="rounded-md border border-zinc-800 bg-zinc-900 px-5 py-2.5 text-center text-sm font-semibold text-zinc-100 hover:bg-zinc-800 sm:text-left">
-                  Lihat preview
+                  See preview
                 </Link>
               </div>
             </div>
@@ -52,19 +52,19 @@ export default function HomePage() {
               <div className="rounded-2xl border border-zinc-800 bg-zinc-950/30 p-4 shadow-sm shadow-black/30 ring-1 ring-white/5 sm:p-5">
                 <div className="text-[13px] font-semibold text-zinc-100 sm:text-sm">Tasks</div>
                 <div className="mt-2 text-[12px] text-zinc-300 sm:text-sm">
-                  Atur inbox, today, in progress, dan done dengan prioritas jelas.
+                  Organize inbox, today, in progress, and done with clear priorities.
                 </div>
               </div>
               <div className="rounded-2xl border border-zinc-800 bg-zinc-950/30 p-4 shadow-sm shadow-black/30 ring-1 ring-white/5 sm:p-5">
                 <div className="text-[13px] font-semibold text-zinc-100 sm:text-sm">Notes</div>
                 <div className="mt-2 text-[12px] text-zinc-300 sm:text-sm">
-                  Simpan ide, recap meeting, dan quick thoughts dalam notepad yang clean.
+                  Store ideas, meeting recaps, and quick thoughts in a clean notepad.
                 </div>
               </div>
               <div className="rounded-2xl border border-zinc-800 bg-zinc-950/30 p-4 shadow-sm shadow-black/30 ring-1 ring-white/5 sm:p-5">
                 <div className="text-[13px] font-semibold text-zinc-100 sm:text-sm">Finance</div>
                 <div className="mt-2 text-[12px] text-zinc-300 sm:text-sm">
-                  Income, expense, budget, dan trend tetap ada sebagai satu modul.
+                  Income, expense, budget, and trends in one module.
                 </div>
               </div>
             </section>
@@ -72,7 +72,7 @@ export default function HomePage() {
 
           <div className="pb-2 text-center text-xs text-zinc-500">
             <Link href="#preview" className="hover:text-zinc-300">
-              Scroll untuk lihat preview ↓
+              Scroll to preview ↓
             </Link>
           </div>
         </div>
@@ -89,7 +89,7 @@ export default function HomePage() {
           <div>©{new Date().getFullYear()} Productivity Space by Phy0</div>
           <div className="flex flex-wrap gap-3">
             <Link href="/sign-in" className="hover:text-zinc-300">
-              Masuk
+              Sign in
             </Link>
             <Link href="/app" className="hover:text-zinc-300">
               Workspace

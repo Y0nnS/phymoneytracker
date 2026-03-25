@@ -15,7 +15,7 @@ export function PasswordInput(
         type="button"
         onClick={() => setVisible((v) => !v)}
         className="absolute right-2 top-[30px] rounded-md px-2 py-1 text-[11px] font-semibold text-zinc-300 hover:bg-zinc-900 sm:top-8 sm:text-xs"
-        aria-label={visible ? 'Sembunyikan password' : 'Tampilkan password'}>
+        aria-label={visible ? 'Hide password' : 'Show password'}>
         {visible ? 'Hide' : 'Show'}
       </button>
     </div>

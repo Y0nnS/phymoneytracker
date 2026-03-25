@@ -25,7 +25,7 @@ export function useTransactions(uid: string | undefined) {
         setLoading(false);
       },
       (err) => {
-        setError(err instanceof Error ? err.message : 'Gagal memuat transaksi.');
+        setError(err instanceof Error ? err.message : 'Failed to load transactions.');
         setLoading(false);
       },
     );

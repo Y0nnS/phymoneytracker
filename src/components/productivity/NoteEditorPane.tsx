@@ -56,11 +56,11 @@ function snapshotFromNote(note: Note) {
 }
 
 function saveLabel(state: SaveState, note?: Note) {
-  if (state === 'dirty') return 'Perubahan belum tersimpan';
-  if (state === 'saving') return 'Menyimpan perubahan...';
-  if (state === 'error') return 'Autosave gagal, coba simpan lagi';
-  if (note?.updatedAt) return `Tersimpan ${formatDateTime(note.updatedAt)}`;
-  return 'Siap ditulis';
+  if (state === 'dirty') return 'Unsaved changes';
+  if (state === 'saving') return 'Saving changes...';
+  if (state === 'error') return 'Autosave failed, try saving again';
+  if (note?.updatedAt) return `Saved ${formatDateTime(note.updatedAt)}`;
+  return 'Ready to write';
 }
 
 export function NoteEditorPane({ noteId }: { noteId: string }) {
@@ -141,10 +141,10 @@ export function NoteEditorPane({ noteId }: { noteId: string }) {
         lastSyncedSnapshotRef.current = nextSnapshot;
         setSaveState('saved');
         if (mode === 'manual') {
-          toast.success('Note tersimpan.');
+          toast.success('Note saved.');
         }
       } catch (err) {
-        const message = err instanceof Error ? err.message : 'Gagal menyimpan note.';
+        const message = err instanceof Error ? err.message : 'Failed to save note.';
         setSaveError(message);
         setSaveState('error');
         if (mode === 'manual') {
@@ -187,10 +187,10 @@ export function NoteEditorPane({ noteId }: { noteId: string }) {
     setDeleting(true);
     try {
       await deleteNote(user.uid, note.id);
-      toast.success('Note dihapus.');
+      toast.success('Note deleted.');
       router.push('/app/notes');
     } catch (err) {
-      toast.danger(err instanceof Error ? err.message : 'Gagal menghapus note.');
+      toast.danger(err instanceof Error ? err.message : 'Failed to delete note.');
     } finally {
       setDeleting(false);
       setDeleteOpen(false);
@@ -202,7 +202,7 @@ export function NoteEditorPane({ noteId }: { noteId: string }) {
   }
 
   if (loading && !note) {
-    return <div className="px-6 py-8 text-sm text-zinc-400">Memuat notepad...</div>;
+    return <div className="px-6 py-8 text-sm text-zinc-400">Loading notes...</div>;
   }
 
   if (!note) {
@@ -210,15 +210,15 @@ export function NoteEditorPane({ noteId }: { noteId: string }) {
       <div className="flex min-h-[72vh] items-center justify-center px-6 py-10">
         <div className="max-w-md text-center">
           <div className="text-sm font-semibold uppercase tracking-[0.18em] text-zinc-500">
-            Note tidak ditemukan
+            Note not found
           </div>
           <p className="mt-3 text-sm leading-relaxed text-zinc-400">
-            Bisa jadi note ini sudah dihapus atau link-nya sudah tidak valid.
+            This note may have been deleted or the link is no longer valid.
           </p>
           <Link
             href="/app/notes"
             className="mt-5 inline-flex rounded-full border border-white/10 bg-white/[0.03] px-5 py-2.5 text-sm font-semibold text-zinc-200 transition-colors hover:bg-white/[0.05]">
-            Kembali ke notes
+            Back to notes
           </Link>
         </div>
       </div>
@@ -231,7 +231,7 @@ export function NoteEditorPane({ noteId }: { noteId: string }) {
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-500 sm:text-xs">
-              Notepad detail
+              Note detail
             </div>
             <div
               className={cn(
@@ -256,10 +256,10 @@ export function NoteEditorPane({ noteId }: { noteId: string }) {
               {draft.pinned ? 'Pinned' : 'Pin note'}
             </button>
             <Button size="sm" variant="secondary" onClick={() => void persistDraft('manual')}>
-              Simpan
+              Save
             </Button>
             <Button size="sm" variant="danger" onClick={() => setDeleteOpen(true)}>
-              Hapus
+              Delete
             </Button>
           </div>
         </div>
@@ -271,7 +271,7 @@ export function NoteEditorPane({ noteId }: { noteId: string }) {
         <div className="grid gap-4 border-b border-white/10 pb-5 xl:grid-cols-[minmax(0,1fr)_220px_180px]">
           <label className="flex flex-col gap-2">
             <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-500">
-              Judul
+              Title
             </span>
             <input
               value={draft.title}
@@ -285,7 +285,7 @@ export function NoteEditorPane({ noteId }: { noteId: string }) {
 
           <label className="flex flex-col gap-2">
             <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-500">
-              Kategori
+              Category
             </span>
             <select
               value={draft.category}
@@ -325,7 +325,7 @@ export function NoteEditorPane({ noteId }: { noteId: string }) {
             onChange={(event) =>
               setDraft((current) => ({ ...current, content: event.target.value }))
             }
-            placeholder="Tulis ide, meeting notes, journaling, atau apa pun yang ingin kamu simpan di workspace ini..."
+            placeholder="Write ideas, meeting notes, journaling, or anything you want to keep here..."
             className="note-editor-area"
           />
         </div>
@@ -333,9 +333,9 @@ export function NoteEditorPane({ noteId }: { noteId: string }) {
 
       <ConfirmDialog
         open={deleteOpen}
-        title="Hapus note?"
-        description={`Note “${note.title}” akan dihapus permanen.`}
-        confirmText="Hapus"
+        title="Delete note?"
+        description={`Note “${note.title}” will be permanently deleted.`}
+        confirmText="Delete"
         confirmVariant="danger"
         confirming={deleting}
         onConfirm={onDelete}

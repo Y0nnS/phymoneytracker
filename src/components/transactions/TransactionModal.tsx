@@ -81,7 +81,7 @@ export function TransactionModal({
 
   const isEditing = mode === 'edit' && initialTransaction != null;
   const isDuplicate = mode === 'duplicate' && initialTransaction != null;
-  const title = isEditing ? 'Edit transaksi' : isDuplicate ? 'Duplikat transaksi' : 'Tambah transaksi';
+  const title = isEditing ? 'Edit transaction' : isDuplicate ? 'Duplicate transaction' : 'Add transaction';
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -89,13 +89,13 @@ export function TransactionModal({
 
     const numericAmount = Number(amount);
     if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
-      setError('Amount harus angka > 0.');
+      setError('Amount must be a number > 0.');
       return;
     }
 
     const txDate = new Date(`${date}T00:00:00`);
     if (Number.isNaN(txDate.getTime())) {
-      setError('Tanggal tidak valid.');
+      setError('Date is invalid.');
       return;
     }
 
@@ -114,18 +114,18 @@ export function TransactionModal({
         await updateTransaction(uid, initialTransaction.id, payload);
         writeLocalStorageItem('moneytracker:lastType', type);
         writeLocalStorageItem(`moneytracker:lastCategory:${type}`, category);
-        toast.success('Transaksi diperbarui.');
+        toast.success('Transaction updated.');
       } else {
         await addTransaction(uid, payload);
         writeLocalStorageItem('moneytracker:lastType', type);
         writeLocalStorageItem(`moneytracker:lastCategory:${type}`, category);
-        toast.success(isDuplicate ? 'Transaksi diduplikasi.' : 'Transaksi tersimpan.');
+        toast.success(isDuplicate ? 'Transaction duplicated.' : 'Transaction saved.');
       }
       onCreated?.();
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Gagal menyimpan transaksi.');
-      toast.danger('Gagal menyimpan transaksi.');
+      setError(err instanceof Error ? err.message : 'Failed to save transaction.');
+      toast.danger('Failed to save transaction.');
     } finally {
       setSubmitting(false);
     }
@@ -138,7 +138,7 @@ export function TransactionModal({
 
         <div className="grid gap-4 md:grid-cols-2">
           <Select
-            label="Tipe"
+            label="Type"
             value={type}
             onChange={(e) => {
               const nextType = e.target.value as TransactionType;
@@ -158,14 +158,14 @@ export function TransactionModal({
             step={1}
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
-            placeholder="Contoh: 50000"
+            placeholder="Example: 50000"
             required
           />
         </div>
 
         <div className="grid gap-4 md:grid-cols-2">
           <Select
-            label="Kategori"
+            label="Category"
             value={category}
             onChange={(e) => setCategory(e.target.value)}>
             {categoriesForType(type).map((c) => (
@@ -175,7 +175,7 @@ export function TransactionModal({
             ))}
           </Select>
           <Input
-            label="Tanggal"
+            label="Date"
             type="date"
             value={date}
             onChange={(e) => setDate(e.target.value)}
@@ -184,18 +184,18 @@ export function TransactionModal({
         </div>
 
         <Textarea
-          label="Note (opsional)"
+          label="Note (optional)"
           value={note}
           onChange={(e) => setNote(e.target.value)}
-          placeholder="Misal: makan siang"
+          placeholder="Example: lunch"
         />
 
         <div className="flex items-center justify-end gap-3">
           <Button variant="secondary" onClick={onClose} type="button">
-            Batal
+            Cancel
           </Button>
           <Button type="submit" disabled={submitting}>
-            {submitting ? 'Menyimpan…' : isEditing ? 'Simpan perubahan' : 'Simpan'}
+            {submitting ? 'Saving…' : isEditing ? 'Save changes' : 'Save'}
           </Button>
         </div>
       </form>

@@ -93,9 +93,9 @@ export default function TasksPage() {
         status: nextStatus,
         completedAt: nextStatus === 'done' ? task.completedAt ?? new Date() : null,
       });
-      toast.success('Status task diperbarui.');
+      toast.success('Task status updated.');
     } catch (err) {
-      toast.danger(err instanceof Error ? err.message : 'Gagal update status task.');
+      toast.danger(err instanceof Error ? err.message : 'Failed to update task status.');
     } finally {
       setUpdatingId(null);
     }
@@ -106,10 +106,10 @@ export default function TasksPage() {
     setDeleting(true);
     try {
       await deleteTask(user.uid, pendingDelete.id);
-      toast.success('Task dihapus.');
+      toast.success('Task deleted.');
       setPendingDelete(null);
     } catch (err) {
-      toast.danger(err instanceof Error ? err.message : 'Gagal menghapus task.');
+      toast.danger(err instanceof Error ? err.message : 'Failed to delete task.');
     } finally {
       setDeleting(false);
     }
@@ -129,7 +129,7 @@ export default function TasksPage() {
             <div className="text-[13px] text-zinc-400 sm:text-sm">Execution layer</div>
             <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Tasks</h1>
           </div>
-          <Button onClick={() => setModalOpen(true)}>Task baru</Button>
+          <Button onClick={() => setModalOpen(true)}>New task</Button>
         </div>
 
         <section className="app-strip">
@@ -152,16 +152,16 @@ export default function TasksPage() {
         <section className="app-surface">
           <div className="grid gap-3 px-4 py-4 sm:px-5 md:grid-cols-[1.2fr_180px_180px]">
             <Input
-              label="Cari task"
+              label="Search tasks"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Judul, kategori, tag, atau deskripsi"
+              placeholder="Title, category, tags, or description"
             />
             <Select
               label="Status"
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}>
-              <option value="all">Semua status</option>
+              <option value="all">All statuses</option>
               {TASK_STATUS_OPTIONS.map((option) => (
                 <option key={option.value} value={option.value}>
                   {option.label}
@@ -169,10 +169,10 @@ export default function TasksPage() {
               ))}
             </Select>
             <Select
-              label="Prioritas"
+              label="Priority"
               value={priorityFilter}
               onChange={(e) => setPriorityFilter(e.target.value as PriorityFilter)}>
-              <option value="all">Semua prioritas</option>
+              <option value="all">All priorities</option>
               {TASK_PRIORITY_OPTIONS.map((option) => (
                 <option key={option.value} value={option.value}>
                   {option.label}
@@ -192,7 +192,7 @@ export default function TasksPage() {
             <div className="flex items-center justify-between gap-3 border-b border-white/10 px-4 py-3.5 sm:py-4">
               <div>
                 <div className="text-[13px] font-semibold sm:text-sm">{group.label}</div>
-                <div className="text-[11px] text-zinc-500 sm:text-xs">{group.items.length} task</div>
+                <div className="text-[11px] text-zinc-500 sm:text-xs">{group.items.length} tasks</div>
               </div>
               <span className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold ${taskStatusTone(group.value)}`}>
                 {group.label}
@@ -201,9 +201,9 @@ export default function TasksPage() {
 
             <div className="divide-y divide-white/10">
               {loading ? (
-                <TaskEmpty message="Memuat…" />
+                <TaskEmpty message="Loading…" />
               ) : group.items.length === 0 ? (
-                <TaskEmpty message="Tidak ada task." />
+                <TaskEmpty message="No tasks yet." />
               ) : (
                 group.items.map((task) => (
                   <div key={task.id} className="px-4 py-4">
@@ -292,7 +292,7 @@ export default function TasksPage() {
                         variant="danger"
                         className="min-w-[92px] flex-1 sm:flex-none"
                         onClick={() => setPendingDelete(task)}>
-                        Hapus
+                        Delete
                       </Button>
                     </div>
                   </div>
@@ -315,13 +315,13 @@ export default function TasksPage() {
 
       <ConfirmDialog
         open={pendingDelete !== null}
-        title="Hapus task?"
+        title="Delete task?"
         description={
           pendingDelete
-            ? `Task “${pendingDelete.title}” akan dihapus permanen dari workspace.`
-            : 'Task akan dihapus permanen.'
+            ? `Task “${pendingDelete.title}” will be permanently deleted from the workspace.`
+            : 'This task will be permanently deleted.'
         }
-        confirmText="Hapus"
+        confirmText="Delete"
         confirmVariant="danger"
         confirming={deleting}
         onConfirm={onDeleteTask}

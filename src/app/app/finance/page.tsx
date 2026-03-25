@@ -7,6 +7,7 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { CumulativeCashflowChart } from '@/components/charts/CumulativeCashflowChart';
 import { ExpenseByCategoryChart } from '@/components/charts/ExpenseByCategoryChart';
+import { MonthlyNetChart } from '@/components/charts/MonthlyNetChart';
 import { TransactionModal } from '@/components/transactions/TransactionModal';
 import { Alert } from '@/components/ui/Alert';
 import { Button } from '@/components/ui/Button';
@@ -35,13 +36,15 @@ function csvEscape(value: string) {
 }
 
 const CASHFLOW_RANGES = [
-  { id: '7d', label: '7d' },
-  { id: '1m', label: '1 bulan' },
-  { id: '3m', label: '3 bulan' },
-  { id: '6m', label: '6 bulan' },
+  { id: '7d', label: '7 days' },
+  { id: '1m', label: '1 month' },
+  { id: '3m', label: '3 month' },
+  { id: '6m', label: '6 month' },
 ] as const;
 
 type CashflowRange = (typeof CASHFLOW_RANGES)[number]['id'];
+
+const TRANSACTION_PAGE_SIZE = 10;
 
 function FinanceCell({
   title,
@@ -86,6 +89,7 @@ export default function FinancePage() {
   const [editingTransaction, setEditingTransaction] = React.useState<Transaction | null>(null);
   const [pendingDelete, setPendingDelete] = React.useState<Transaction | null>(null);
   const [deleting, setDeleting] = React.useState(false);
+  const [page, setPage] = React.useState(0);
 
   React.useEffect(() => {
     if (searchParams.get('compose') === 'transaction') {
@@ -117,6 +121,18 @@ export default function FinancePage() {
       );
     });
   }, [monthTransactions, typeFilter, query]);
+
+  React.useEffect(() => {
+    setPage(0);
+  }, [monthId, typeFilter, query]);
+
+  const pageCount = Math.max(1, Math.ceil(filtered.length / TRANSACTION_PAGE_SIZE));
+  const pageStart = page * TRANSACTION_PAGE_SIZE;
+  const pageEnd = pageStart + TRANSACTION_PAGE_SIZE;
+  const pagedTransactions = React.useMemo(
+    () => filtered.slice(pageStart, pageEnd),
+    [filtered, pageEnd, pageStart],
+  );
 
   const income = React.useMemo(() => sumByType(monthTransactions, 'income'), [monthTransactions]);
   const expense = React.useMemo(() => sumByType(monthTransactions, 'expense'), [monthTransactions]);
@@ -169,7 +185,7 @@ export default function FinancePage() {
 
     const numericAmount = Number(amount);
     if (!Number.isFinite(numericAmount) || numericAmount < 0) {
-      setSaveError('Budget harus angka >= 0.');
+      setSaveError('Budget must be a number >= 0.');
       return;
     }
 
@@ -177,10 +193,10 @@ export default function FinancePage() {
     setSaveError(null);
     try {
       await setBudgetForMonth(user.uid, monthId, Math.round(numericAmount));
-      toast.success('Budget tersimpan.');
+      toast.success('Budget saved.');
     } catch (err) {
-      setSaveError(err instanceof Error ? err.message : 'Gagal menyimpan budget.');
-      toast.danger('Gagal menyimpan budget.');
+      setSaveError(err instanceof Error ? err.message : 'Failed to save budget.');
+      toast.danger('Failed to save budget.');
     } finally {
       setSavingBudget(false);
     }
@@ -191,10 +207,10 @@ export default function FinancePage() {
     setDeleting(true);
     try {
       await deleteTransaction(user.uid, pendingDelete.id);
-      toast.success('Transaksi dihapus.');
+      toast.success('Transaction deleted.');
       setPendingDelete(null);
     } catch (err) {
-      toast.danger(err instanceof Error ? err.message : 'Gagal menghapus transaksi.');
+      toast.danger(err instanceof Error ? err.message : 'Failed to delete transaction.');
     } finally {
       setDeleting(false);
     }
@@ -240,16 +256,16 @@ export default function FinancePage() {
         <section className="app-surface">
           <div className="grid gap-3 px-4 py-4 sm:px-5 md:grid-cols-[180px_180px_180px_1fr]">
             <Input
-              label="Bulan"
+              label="Month"
               type="month"
               value={monthId}
               onChange={(e) => setMonthId(e.target.value)}
             />
             <Select
-              label="Tipe"
+              label="Type"
               value={typeFilter}
               onChange={(e) => setTypeFilter(e.target.value as 'all' | TransactionType)}>
-              <option value="all">Semua</option>
+              <option value="all">All</option>
               <option value="income">Income</option>
               <option value="expense">Expense</option>
             </Select>
@@ -259,10 +275,10 @@ export default function FinancePage() {
               </Button>
             </div>
             <Input
-              label="Cari"
+              label="Search"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Kategori atau note…"
+              placeholder="Category or note…"
             />
           </div>
         </section>
@@ -277,28 +293,30 @@ export default function FinancePage() {
           <FinanceCell
             title="Income"
             value={formatIDR(income)}
-            subtitle={`${monthTransactions.length} transaksi`}
+            subtitle="Total income"
             toneClass="text-emerald-200"
           />
           <FinanceCell
             title="Expense"
             value={formatIDR(expense)}
-            subtitle={`Top kategori: ${topCategory}`}
+            subtitle="Total expense"
             toneClass="text-red-200"
           />
           <FinanceCell
             title="Net"
             value={formatIDR(net)}
-            subtitle={monthId}
+            subtitle="Balance"
             toneClass={net >= 0 ? 'text-blue-200' : 'text-amber-200'}
           />
           <div className="app-strip-cell">
-            <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-zinc-500 sm:text-xs">Budget</div>
+            <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-zinc-500 sm:text-xs">Monthly budget</div>
             <div className="mt-2 text-xl font-semibold sm:text-2xl">
-              {budgetAmount === null ? 'Belum diset' : formatIDR(budgetAmount)}
+              {budgetAmount === null ? 'Not set' : formatIDR(budgetAmount)}
             </div>
             <div className="mt-1 text-[12px] text-zinc-400 sm:text-sm">
-              {budgetAmount === null ? 'Set budget bulan ini.' : `${Math.round((budgetRatio ?? 0) * 100)}% terpakai`}
+              {budgetAmount === null
+                ? 'Set a monthly spending limit.'
+                : `${Math.round((budgetRatio ?? 0) * 100)}% used`}
             </div>
             {budgetRatio !== null ? (
               <div className="mt-4">
@@ -309,18 +327,19 @@ export default function FinancePage() {
         </div>
       </section>
 
+
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1.05fr)_minmax(320px,.95fr)]">
         <section className="app-surface overflow-hidden">
           <div className="app-panel-header">
             <div>
-              <div className="text-sm font-semibold">Cashflow pengeluaran harian</div>
+              <div className="text-sm font-semibold">Daily expense flow</div>
               <div className="mt-1 text-xs text-zinc-500">
-                Naik-turun expense per hari sesuai rentang yang dipilih.
+                Daily expense movement.
               </div>
             </div>
             <div className="w-full sm:w-[160px]">
               <Select
-                aria-label="Pilih rentang cashflow"
+                aria-label="Select cashflow range"
                 value={cashflowRange}
                 onChange={(e) => setCashflowRange(e.target.value as CashflowRange)}>
                 {CASHFLOW_RANGES.map((item) => (
@@ -344,7 +363,7 @@ export default function FinancePage() {
           <div className="app-panel-header">
             <div>
               <div className="text-sm font-semibold">Expense by category</div>
-              <div className="mt-1 text-xs text-zinc-500">Breakdown expense bulan ini.</div>
+              <div className="mt-1 text-xs text-zinc-500">Category split for this month.</div>
             </div>
           </div>
           <div className="px-5 py-5 sm:px-6">
@@ -354,18 +373,30 @@ export default function FinancePage() {
       </div>
 
       <section className="app-surface overflow-hidden">
+        <div className="app-panel-header">
+          <div>
+            <div className="text-sm font-semibold">Net trend</div>
+            <div className="mt-1 text-xs text-zinc-500">Last 6 months net balance.</div>
+          </div>
+        </div>
+        <div className="px-5 py-5 sm:px-6">
+          <MonthlyNetChart monthId={monthId} transactions={transactions} rangeMonths={6} />
+        </div>
+      </section>
+
+      <section className="app-surface overflow-hidden">
         <form onSubmit={onSaveBudget} className="flex flex-col gap-4">
           <div className="app-panel-header">
             <div>
-              <div className="text-sm font-semibold">Budget control</div>
+              <div className="text-sm font-semibold">Monthly budget</div>
               <div className="mt-1 text-xs text-zinc-500">
-                {budgetLoading ? 'Memuat budget…' : 'Atur batas pengeluaran bulanan.'}
+                {budgetLoading ? 'Loading budget…' : 'Set a monthly spending cap.'}
               </div>
             </div>
             <div className="text-left text-xs text-zinc-500 sm:text-right">
               {budgetAmount === null
-                ? 'Belum ada budget'
-                : `${Math.round((budgetRatio ?? 0) * 100)}% terpakai`}
+                ? 'No budget set'
+                : `${Math.round((budgetRatio ?? 0) * 100)}% used`}
             </div>
           </div>
           <div className="grid gap-4 px-4 pb-4 sm:px-6 sm:pb-5">
@@ -382,18 +413,18 @@ export default function FinancePage() {
               />
               <div className="flex items-end">
                 <Button type="submit" disabled={savingBudget}>
-                  {savingBudget ? 'Menyimpan…' : 'Simpan budget'}
+                  {savingBudget ? 'Saving…' : 'Save budget'}
                 </Button>
               </div>
             </div>
             <div className="app-strip overflow-hidden">
               <div className="app-strip-grid md:grid-cols-3">
                 <div className="app-strip-cell">
-                  <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-zinc-500 sm:text-xs">Terpakai</div>
+                  <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-zinc-500 sm:text-xs">Spent</div>
                   <div className="mt-2 text-base font-semibold sm:text-lg">{formatIDR(expense)}</div>
                 </div>
                 <div className="app-strip-cell">
-                  <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-zinc-500 sm:text-xs">Sisa</div>
+                  <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-zinc-500 sm:text-xs">Remaining</div>
                   <div className="mt-2 text-base font-semibold sm:text-lg">
                     {budgetAmount === null ? '—' : formatIDR(budgetAmount - expense)}
                   </div>
@@ -401,7 +432,7 @@ export default function FinancePage() {
                 <div className="app-strip-cell">
                   <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-zinc-500 sm:text-xs">Status</div>
                   <div className="mt-2 text-base font-semibold sm:text-lg">
-                    {budgetAmount === null ? 'Draft' : expense <= budgetAmount ? 'Aman' : 'Over'}
+                    {budgetAmount === null ? 'Draft' : expense <= budgetAmount ? 'On track' : 'Over'}
                   </div>
                 </div>
               </div>
@@ -415,22 +446,22 @@ export default function FinancePage() {
           <div>
             <div className="text-sm font-semibold">Transactions</div>
             <div className="mt-1 text-xs text-zinc-500">
-              {filtered.length} transaksi untuk {monthId}
+              {filtered.length} transactions for {monthId}
             </div>
           </div>
           <div className="text-xs text-zinc-500">
-            {typeFilter === 'all' ? 'Semua tipe' : typeFilter}
+            {typeFilter === 'all' ? 'All types' : typeFilter}
           </div>
         </div>
 
         <div className="md:hidden">
           {loading ? (
-            <div className="px-5 py-4 text-sm text-zinc-400">Memuat…</div>
+            <div className="px-5 py-4 text-sm text-zinc-400">Loading…</div>
           ) : filtered.length === 0 ? (
-            <div className="px-5 py-4 text-sm text-zinc-400">Tidak ada transaksi.</div>
+            <div className="px-5 py-4 text-sm text-zinc-400">No transactions yet.</div>
           ) : (
             <div className="divide-y divide-zinc-800">
-              {filtered.map((transaction) => (
+              {pagedTransactions.map((transaction) => (
                 <div key={transaction.id} className="px-4 py-3.5 sm:px-5 sm:py-4">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
@@ -457,10 +488,10 @@ export default function FinancePage() {
                       Edit
                     </Button>
                     <Button size="sm" variant="ghost" onClick={() => openEdit(transaction, 'duplicate')}>
-                      Dup
+                      Duplicate
                     </Button>
                     <Button size="sm" variant="danger" onClick={() => setPendingDelete(transaction)}>
-                      Hapus
+                      Delete
                     </Button>
                   </div>
                 </div>
@@ -473,29 +504,29 @@ export default function FinancePage() {
           <table className="w-full min-w-[720px] table-auto">
             <thead>
               <tr className="text-left text-xs font-semibold text-zinc-500">
-                <th className="px-5 py-3">Tanggal</th>
-                <th className="px-5 py-3">Tipe</th>
-                <th className="px-5 py-3">Kategori</th>
+                <th className="px-5 py-3">Date</th>
+                <th className="px-5 py-3">Type</th>
+                <th className="px-5 py-3">Category</th>
                 <th className="px-5 py-3">Note</th>
                 <th className="px-5 py-3 text-right">Amount</th>
-                <th className="px-5 py-3 text-right">Aksi</th>
+                <th className="px-5 py-3 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-800">
               {loading ? (
                 <tr>
                   <td colSpan={6} className="px-5 py-4 text-sm text-zinc-400">
-                    Memuat…
+                    Loading…
                   </td>
                 </tr>
               ) : filtered.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="px-5 py-4 text-sm text-zinc-400">
-                    Tidak ada transaksi.
+                    No transactions yet.
                   </td>
                 </tr>
               ) : (
-                filtered.map((transaction) => (
+                pagedTransactions.map((transaction) => (
                   <tr key={transaction.id} className="text-sm text-zinc-200 hover:bg-zinc-950/40">
                     <td className="px-5 py-4 text-zinc-300">{formatDateShort(transaction.date)}</td>
                     <td className="px-5 py-4">
@@ -525,10 +556,10 @@ export default function FinancePage() {
                           Edit
                         </Button>
                         <Button size="sm" variant="ghost" onClick={() => openEdit(transaction, 'duplicate')}>
-                          Duplikat
+                          Duplicate
                         </Button>
                         <Button size="sm" variant="danger" onClick={() => setPendingDelete(transaction)}>
-                          Hapus
+                          Delete
                         </Button>
                       </div>
                     </td>
@@ -538,6 +569,29 @@ export default function FinancePage() {
             </tbody>
           </table>
         </div>
+        {filtered.length > 0 ? (
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-zinc-900 px-5 py-4 text-xs text-zinc-500">
+            <div>
+              Page {page + 1} of {pageCount}
+            </div>
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={() => setPage((current) => Math.max(0, current - 1))}
+                disabled={page === 0}>
+                Previous
+              </Button>
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={() => setPage((current) => Math.min(pageCount - 1, current + 1))}
+                disabled={page >= pageCount - 1}>
+                Next
+              </Button>
+            </div>
+          </div>
+        ) : null}
       </section>
 
       {user ? (
@@ -553,15 +607,15 @@ export default function FinancePage() {
 
       <ConfirmDialog
         open={pendingDelete !== null}
-        title="Hapus transaksi?"
+        title="Delete transaction?"
         description={
           pendingDelete
-            ? `Transaksi “${pendingDelete.category}” (${formatDateShort(
+            ? `Transaction “${pendingDelete.category}” (${formatDateShort(
                 pendingDelete.date,
-              )}) sebesar ${formatIDR(pendingDelete.amount)} akan dihapus permanen.`
-            : 'Transaksi akan dihapus permanen.'
+              )}) for ${formatIDR(pendingDelete.amount)} will be permanently deleted.`
+            : 'This transaction will be permanently deleted.'
         }
-        confirmText="Hapus"
+        confirmText="Delete"
         confirmVariant="danger"
         confirming={deleting}
         onConfirm={onDeleteTransaction}

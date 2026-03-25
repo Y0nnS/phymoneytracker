@@ -25,7 +25,7 @@ export function useNotes(uid: string | undefined) {
         setLoading(false);
       },
       (err) => {
-        setError(err instanceof Error ? err.message : 'Gagal memuat notes.');
+        setError(err instanceof Error ? err.message : 'Failed to load notes.');
         setLoading(false);
       },
     );

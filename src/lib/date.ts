@@ -21,7 +21,7 @@ export function isSameMonth(date: Date, monthId: string) {
 }
 
 export function formatDateShort(date: Date) {
-  return date.toLocaleDateString('id-ID', {
+  return date.toLocaleDateString('en-US', {
     day: '2-digit',
     month: 'short',
     year: 'numeric',
@@ -29,9 +29,10 @@ export function formatDateShort(date: Date) {
 }
 
 export function formatDateTime(date: Date) {
-  return date.toLocaleString('id-ID', {
+  return date.toLocaleString('en-US', {
     day: '2-digit',
     month: 'short',
+    year: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
   });
@@ -40,7 +41,7 @@ export function formatDateTime(date: Date) {
 export function formatDayLabel(dateId: string) {
   const date = new Date(`${dateId}T00:00:00`);
   if (Number.isNaN(date.getTime())) return dateId;
-  return date.toLocaleDateString('id-ID', {
+  return date.toLocaleDateString('en-US', {
     weekday: 'short',
     day: '2-digit',
     month: 'short',

@@ -19,7 +19,7 @@ export function monthIdLabel(monthId: string) {
   const parsed = parseMonthId(monthId);
   if (!parsed) return monthId;
   const date = new Date(parsed.year, parsed.month - 1, 1);
-  return date.toLocaleDateString('id-ID', { month: 'short', year: '2-digit' });
+  return date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
 }
 
 export function dateKeyLocal(date: Date) {

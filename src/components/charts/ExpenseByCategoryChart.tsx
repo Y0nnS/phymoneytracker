@@ -69,7 +69,7 @@ export function ExpenseByCategoryChart({
   if (breakdown.totalExpense <= 0) {
     return (
       <div className="text-sm text-zinc-400">
-        Belum ada expense untuk breakdown kategori.
+        No expenses yet for category breakdown.
       </div>
     );
   }

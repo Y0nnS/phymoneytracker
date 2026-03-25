@@ -52,17 +52,17 @@ export function PlannerBlockModal({
     const cleanTitle = title.trim();
 
     if (!cleanTitle) {
-      setError('Judul block wajib diisi.');
+      setError('Block title is required.');
       return;
     }
 
     if (!date) {
-      setError('Tanggal block wajib diisi.');
+      setError('Block date is required.');
       return;
     }
 
     if (!startTime || !endTime || endTime <= startTime) {
-      setError('Waktu selesai harus setelah waktu mulai.');
+      setError('End time must be after start time.');
       return;
     }
 
@@ -81,16 +81,16 @@ export function PlannerBlockModal({
 
       if (initialBlock) {
         await updatePlannerBlock(uid, initialBlock.id, payload);
-        toast.success('Planner block diperbarui.');
+        toast.success('Planner block updated.');
       } else {
         await addPlannerBlock(uid, payload);
-        toast.success('Planner block tersimpan.');
+        toast.success('Planner block saved.');
       }
 
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Gagal menyimpan planner block.');
-      toast.danger('Gagal menyimpan planner block.');
+      setError(err instanceof Error ? err.message : 'Failed to save planner block.');
+      toast.danger('Failed to save planner block.');
     } finally {
       setSubmitting(false);
     }
@@ -99,13 +99,13 @@ export function PlannerBlockModal({
   return (
     <Modal
       open={open}
-      title={initialBlock ? 'Edit planner block' : 'Planner block baru'}
+      title={initialBlock ? 'Edit planner block' : 'New planner block'}
       onClose={onClose}>
       <form onSubmit={onSubmit} className="flex flex-col gap-4">
         {error ? <Alert variant="danger">{error}</Alert> : null}
 
         <Input
-          label="Judul"
+          label="Title"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="Deep work - dashboard redesign"
@@ -114,7 +114,7 @@ export function PlannerBlockModal({
 
         <div className="grid gap-4 md:grid-cols-2">
           <Select
-            label="Tipe"
+            label="Type"
             value={type}
             onChange={(e) => setType(e.target.value as PlannerBlockType)}>
             {PLANNER_BLOCK_TYPES.map((option) => (
@@ -124,7 +124,7 @@ export function PlannerBlockModal({
             ))}
           </Select>
           <Input
-            label="Tanggal"
+            label="Date"
             type="date"
             value={date}
             onChange={(e) => setDate(e.target.value)}
@@ -134,14 +134,14 @@ export function PlannerBlockModal({
 
         <div className="grid gap-4 md:grid-cols-2">
           <Input
-            label="Mulai"
+            label="Start"
             type="time"
             value={startTime}
             onChange={(e) => setStartTime(e.target.value)}
             required
           />
           <Input
-            label="Selesai"
+            label="End"
             type="time"
             value={endTime}
             onChange={(e) => setEndTime(e.target.value)}
@@ -150,18 +150,18 @@ export function PlannerBlockModal({
         </div>
 
         <Textarea
-          label="Catatan"
+          label="Notes"
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
-          placeholder="Outcome yang ingin dicapai, agenda rapat, dsb."
+          placeholder="Outcome, meeting agenda, etc."
         />
 
         <div className="flex items-center justify-end gap-3">
           <Button variant="secondary" type="button" onClick={onClose}>
-            Batal
+            Cancel
           </Button>
           <Button type="submit" disabled={submitting}>
-            {submitting ? 'Menyimpan…' : initialBlock ? 'Simpan perubahan' : 'Simpan block'}
+            {submitting ? 'Saving…' : initialBlock ? 'Save changes' : 'Save block'}
           </Button>
         </div>
       </form>

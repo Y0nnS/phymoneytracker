@@ -1,6 +1,7 @@
 import { initializeApp, getApps } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
+import { getStorage } from 'firebase/storage';
 
 function getFirebaseConfig() {
   const apiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
@@ -20,7 +21,7 @@ function getFirebaseConfig() {
     !appId
   ) {
     throw new Error(
-      'Firebase env belum lengkap. Isi .env.local berdasarkan .env.example',
+      'Firebase env is incomplete. Fill .env.local based on .env.example.',
     );
   }
 
@@ -41,3 +42,4 @@ export const firebaseApp = getApps().length
 
 export const firebaseAuth = getAuth(firebaseApp);
 export const firestore = getFirestore(firebaseApp);
+export const firebaseStorage = getStorage(firebaseApp);

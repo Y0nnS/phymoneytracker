@@ -25,7 +25,7 @@ export function useTasks(uid: string | undefined) {
         setLoading(false);
       },
       (err) => {
-        setError(err instanceof Error ? err.message : 'Gagal memuat tasks.');
+        setError(err instanceof Error ? err.message : 'Failed to load tasks.');
         setLoading(false);
       },
     );

@@ -36,11 +36,11 @@ export default function SignInPage() {
       <div className="mx-auto flex w-full max-w-md flex-col gap-5 px-4 py-12 sm:gap-6 sm:px-6 sm:py-16">
         <div className="flex flex-col gap-2">
           <Link href="/" className="text-[13px] font-semibold text-zinc-300 sm:text-sm">
-            ← Kembali
+            ← Back
           </Link>
-          <h1 className="text-xl font-semibold sm:text-2xl">Masuk</h1>
+          <h1 className="text-xl font-semibold sm:text-2xl">Sign in</h1>
           <p className="text-[13px] text-zinc-400 sm:text-sm">
-            Masuk ke Productivity Space pakai email dan password yang sudah dibuat.
+            Sign in to Productivity Space using the email and password you already have.
           </p>
         </div>
 
@@ -67,10 +67,10 @@ export default function SignInPage() {
             required
           />
           <Button type="submit" disabled={loading}>
-            {loading ? 'Masuk…' : 'Masuk'}
+            {loading ? 'Signing in…' : 'Sign in'}
           </Button>
           <div className="text-center text-sm text-zinc-500">
-            Registrasi dinonaktifkan karena workspace ini untuk pemakaian pribadi.
+            Registration is disabled because this workspace is for personal use.
           </div>
         </form>
       </div>

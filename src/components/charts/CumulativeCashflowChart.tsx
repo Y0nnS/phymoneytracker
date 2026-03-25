@@ -54,7 +54,7 @@ export function CumulativeCashflowChart({
       labels: series.labels,
       datasets: [
         {
-          label: 'Expense harian',
+          label: 'Daily expense',
           data: series.values,
           borderColor: CHART_COLORS.expense,
           backgroundColor: CHART_COLORS.expense,

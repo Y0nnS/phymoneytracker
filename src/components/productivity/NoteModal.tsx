@@ -47,7 +47,7 @@ export function NoteModal({
     const cleanContent = content.trim();
 
     if (!cleanTitle && !cleanContent) {
-      setError('Isi judul atau konten note.');
+      setError('Please add a title or content.');
       return;
     }
 
@@ -64,28 +64,28 @@ export function NoteModal({
 
       if (initialNote) {
         await updateNote(uid, initialNote.id, payload);
-        toast.success('Note diperbarui.');
+        toast.success('Note updated.');
       } else {
         await addNote(uid, payload);
-        toast.success('Note tersimpan.');
+        toast.success('Note saved.');
       }
 
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Gagal menyimpan note.');
-      toast.danger('Gagal menyimpan note.');
+      setError(err instanceof Error ? err.message : 'Failed to save note.');
+      toast.danger('Failed to save note.');
     } finally {
       setSubmitting(false);
     }
   }
 
   return (
-    <Modal open={open} title={initialNote ? 'Edit note' : 'Note baru'} onClose={onClose}>
+    <Modal open={open} title={initialNote ? 'Edit note' : 'New note'} onClose={onClose}>
       <form onSubmit={onSubmit} className="flex flex-col gap-4">
         {error ? <Alert variant="danger">{error}</Alert> : null}
 
         <Input
-          label="Judul"
+          label="Title"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="Morning dump / Meeting recap"
@@ -93,7 +93,7 @@ export function NoteModal({
 
         <div className="grid gap-4 md:grid-cols-2">
           <Select
-            label="Kategori"
+            label="Category"
             value={category}
             onChange={(e) => setCategory(e.target.value)}>
             {NOTE_CATEGORY_OPTIONS.map((option) => (
@@ -103,7 +103,7 @@ export function NoteModal({
             ))}
           </Select>
           <label className="flex flex-col gap-1.5">
-            <span className="text-sm font-medium text-zinc-200">Pin ke atas</span>
+            <span className="text-sm font-medium text-zinc-200">Pin to top</span>
             <label className="flex h-10 items-center gap-3 rounded-md border border-zinc-800 bg-zinc-950 px-3 text-sm text-zinc-300">
               <input
                 type="checkbox"
@@ -117,19 +117,19 @@ export function NoteModal({
         </div>
 
         <Textarea
-          label="Konten"
+          label="Content"
           value={content}
           onChange={(e) => setContent(e.target.value)}
-          placeholder="Tulis ide, catatan rapat, atau reminder..."
+          placeholder="Write ideas, meeting notes, or reminders..."
           className="min-h-[180px]"
         />
 
         <div className="flex items-center justify-end gap-3">
           <Button variant="secondary" type="button" onClick={onClose}>
-            Batal
+            Cancel
           </Button>
           <Button type="submit" disabled={submitting}>
-            {submitting ? 'Menyimpan…' : initialNote ? 'Simpan perubahan' : 'Simpan note'}
+            {submitting ? 'Saving…' : initialNote ? 'Save changes' : 'Save note'}
           </Button>
         </div>
       </form>

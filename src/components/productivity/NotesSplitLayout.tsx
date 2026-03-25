@@ -29,7 +29,7 @@ function sortNotes(notes: Note[]) {
 
 function notePreview(note: Note) {
   const clean = note.content.replace(/\s+/g, ' ').trim();
-  if (!clean) return 'Belum ada isi note.';
+  if (!clean) return 'No note content yet.';
   return clean.length > 110 ? `${clean.slice(0, 110)}...` : clean;
 }
 
@@ -95,9 +95,9 @@ export function NotesSplitLayout({ children }: { children: React.ReactNode }) {
         } else {
           router.push(href);
         }
-        toast.success('Notepad baru siap dipakai.');
+        toast.success('New note is ready.');
       } catch (err) {
-        toast.danger(err instanceof Error ? err.message : 'Gagal membuat notepad baru.');
+        toast.danger(err instanceof Error ? err.message : 'Failed to create a new note.');
       } finally {
         setCreatingNote(false);
       }
@@ -125,14 +125,14 @@ export function NotesSplitLayout({ children }: { children: React.ReactNode }) {
                   Notes
                 </h1>
                 <div className="mt-2 text-[12px] text-zinc-400 sm:text-sm">
-                  {filteredNotes.length} dari {notes.length} note
+                  {filteredNotes.length} of {notes.length} notes
                 </div>
               </div>
               <Button
                 size="sm"
                 onClick={() => void createAndOpenNote()}
                 disabled={creatingNote}>
-                {creatingNote ? 'Membuat…' : 'New'}
+                {creatingNote ? 'Creating…' : 'New'}
               </Button>
             </div>
           </div>
@@ -141,7 +141,7 @@ export function NotesSplitLayout({ children }: { children: React.ReactNode }) {
             <Input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Cari judul, isi, atau kategori"
+              placeholder="Search title, content, or category"
             />
             <div className="mt-3 flex flex-wrap gap-2">
               <button
@@ -153,7 +153,7 @@ export function NotesSplitLayout({ children }: { children: React.ReactNode }) {
                     ? 'border-blue-500/40 bg-blue-500/15 text-blue-100'
                     : 'border-white/10 bg-white/[0.03] text-zinc-300 hover:bg-white/[0.05]',
                 )}>
-                {pinnedOnly ? 'Pinned only' : 'Semua note'}
+                {pinnedOnly ? 'Pinned only' : 'All notes'}
               </button>
               {categoryOptions.map((category) => (
                 <button
@@ -180,9 +180,9 @@ export function NotesSplitLayout({ children }: { children: React.ReactNode }) {
 
           <div className="min-h-0 flex-1 overflow-y-auto">
             {loading ? (
-              <EmptySidebarState message="Memuat notepad..." />
+              <EmptySidebarState message="Loading notes..." />
             ) : filteredNotes.length === 0 ? (
-              <EmptySidebarState message="Belum ada note yang cocok dengan filter ini." />
+              <EmptySidebarState message="No notes match this filter." />
             ) : (
               filteredNotes.map((note) => (
                 <Link

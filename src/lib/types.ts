@@ -11,6 +11,14 @@ export type Transaction = {
 
 export type TransactionCreateInput = Omit<Transaction, 'id'>;
 
+export type UserProfile = {
+  uid: string;
+  displayName: string;
+  photoURL?: string;
+  createdAt?: Date;
+  updatedAt?: Date;
+};
+
 export type Budget = {
   month: string; 
   amount: number;

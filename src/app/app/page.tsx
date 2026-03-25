@@ -3,6 +3,9 @@
 import Link from 'next/link';
 import React from 'react';
 import { useAuth } from '@/components/auth/AuthProvider';
+import { CumulativeCashflowChart } from '@/components/charts/CumulativeCashflowChart';
+import { ExpenseByCategoryChart } from '@/components/charts/ExpenseByCategoryChart';
+import { MonthlyNetChart } from '@/components/charts/MonthlyNetChart';
 import { Alert } from '@/components/ui/Alert';
 import { Button } from '@/components/ui/Button';
 import { Progress } from '@/components/ui/Progress';
@@ -120,45 +123,45 @@ export default function WorkspacePage() {
               Productivity Space
             </h1>
             <p className="mt-3 text-[13px] leading-relaxed text-zinc-300 sm:text-base">
-              Dashboard utama buat ngelihat task penting, buka notepad aktif, dan pantau
-              uang masuk keluar tanpa kebanyakan layer.
+              Main dashboard to check priority tasks, open active notes, and track
+              money in and out without extra layers.
             </p>
             <div className="mt-6 flex flex-wrap gap-2">
               <Link href="/app/tasks?compose=task">
-                <Button>Task baru</Button>
+                <Button>New task</Button>
               </Link>
               <Link href="/app/notes?compose=note">
-                <Button variant="secondary">Notepad baru</Button>
+                <Button variant="secondary">New note</Button>
               </Link>
               <Link href="/app/finance">
-                <Button variant="secondary">Buka finance</Button>
+                <Button variant="secondary">Open finance</Button>
               </Link>
             </div>
           </div>
 
           <div className="app-surface-subtle p-4 sm:p-5">
             <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-zinc-500 sm:text-xs">
-              Snapshot hari ini
+              Today's snapshot
             </div>
             <div className="mt-4 space-y-4">
               <div>
-                <div className="text-[13px] font-semibold text-zinc-100 sm:text-sm">Task fokus</div>
+                <div className="text-[13px] font-semibold text-zinc-100 sm:text-sm">Focus tasks</div>
                 <div className="mt-1 text-[12px] text-zinc-400 sm:text-sm">
                   {todayTasks.length > 0
-                    ? `${todayTasks.length} task aktif, ${todayTasks.filter((task) => task.priority === 'high').length} high priority`
-                    : 'Belum ada task prioritas untuk hari ini'}
+                    ? `${todayTasks.length} active tasks, ${todayTasks.filter((task) => task.priority === 'high').length} high priority`
+                    : 'No priority tasks for today'}
                 </div>
               </div>
               <div className="border-t border-white/10 pt-4">
-                <div className="text-[13px] font-semibold text-zinc-100 sm:text-sm">Notepad aktif</div>
+                <div className="text-[13px] font-semibold text-zinc-100 sm:text-sm">Active notes</div>
                 <div className="mt-1 text-[12px] text-zinc-400 sm:text-sm">
                   {noteDesk.length > 0
-                    ? `${noteDesk.length} note terakhir siap dibuka lagi`
-                    : 'Mulai dari satu blank note untuk simpan ide'}
+                    ? `${noteDesk.length} recent notes ready to reopen`
+                    : 'Start with a blank note to capture ideas'}
                 </div>
               </div>
               <div className="border-t border-white/10 pt-4 text-[12px] text-zinc-400 sm:text-sm">
-                Cashflow bulan ini:{' '}
+                This month cashflow:{' '}
                 <span className="font-semibold text-zinc-100">{formatIDRCompact(net)}</span>
               </div>
             </div>
@@ -176,7 +179,7 @@ export default function WorkspacePage() {
             subtitle={
               todayTasks.length > 0
                 ? `${todayTasks.filter((task) => task.priority === 'high').length} high priority`
-                : 'Inbox masih kosong'
+                : 'Inbox is empty'
             }
             toneClass="text-blue-200"
           />
@@ -186,13 +189,13 @@ export default function WorkspacePage() {
             subtitle={
               notes.length > 0
                 ? `${noteDesk.filter((note) => note.pinned).length} pinned`
-                : 'Belum ada notepad'
+                : 'No notes yet'
             }
           />
           <MetricCell
             title="Net Month"
             value={formatIDRCompact(net)}
-            subtitle={`${monthTransactions.length} transaksi`}
+            subtitle={`${monthTransactions.length} transactions`}
             toneClass={net >= 0 ? 'text-emerald-200' : 'text-amber-200'}
           />
           <MetricCell
@@ -200,7 +203,50 @@ export default function WorkspacePage() {
             value={
               budgetAmount === null ? 'Draft' : `${Math.round((budgetRatio ?? 0) * 100)}%`
             }
-            subtitle={budgetAmount === null ? 'Set budget bulan ini' : 'Budget usage'}
+            subtitle={budgetAmount === null ? "Set this month's budget" : 'Budget usage'}
+          />
+        </div>
+      </section>
+
+      <section className="grid gap-5 xl:grid-cols-[minmax(0,1.35fr)_minmax(0,.85fr)]">
+        <div className="app-surface overflow-hidden">
+          <div className="app-panel-header">
+            <div>
+              <div className="text-sm font-semibold">Net trend</div>
+              <div className="mt-1 text-xs text-zinc-500">Last 6 months net balance.</div>
+            </div>
+            <div className="text-xs text-zinc-500">Updated monthly</div>
+          </div>
+          <div className="px-5 py-5 sm:px-6">
+            <MonthlyNetChart monthId={monthId} transactions={transactions} rangeMonths={6} />
+          </div>
+        </div>
+
+        <div className="app-surface overflow-hidden">
+          <div className="app-panel-header">
+            <div>
+              <div className="text-sm font-semibold">Expense by category</div>
+              <div className="mt-1 text-xs text-zinc-500">Category split for this month.</div>
+            </div>
+          </div>
+          <div className="px-5 py-5 sm:px-6">
+            <ExpenseByCategoryChart monthTransactions={monthTransactions} />
+          </div>
+        </div>
+      </section>
+
+      <section className="app-surface overflow-hidden">
+        <div className="app-panel-header">
+          <div>
+            <div className="text-sm font-semibold">Daily expense flow</div>
+            <div className="mt-1 text-xs text-zinc-500">Rolling 30 days expense movement.</div>
+          </div>
+        </div>
+        <div className="px-5 py-5 sm:px-6">
+          <CumulativeCashflowChart
+            monthId={monthId}
+            transactions={transactions}
+            range="1m"
           />
         </div>
       </section>
@@ -211,18 +257,18 @@ export default function WorkspacePage() {
             <div>
               <div className="text-sm font-semibold">Today queue</div>
               <div className="mt-1 text-xs text-zinc-500">
-                Task yang perlu kamu dorong hari ini.
+                Tasks you should push today.
               </div>
             </div>
             <Link
               href="/app/tasks"
               className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-2 text-xs font-semibold text-zinc-100 transition-colors hover:bg-white/[0.05]">
-              Semua task
+              All tasks
             </Link>
           </div>
           <div className="app-list">
             {todayTasks.length === 0 ? (
-              <EmptyState message="Belum ada task untuk hari ini." />
+              <EmptyState message="No tasks for today." />
             ) : (
               todayTasks.slice(0, 5).map((task) => (
                 <div key={task.id} className="app-list-row">
@@ -256,12 +302,12 @@ export default function WorkspacePage() {
           <div className="app-panel-header">
             <div>
               <div className="text-sm font-semibold">Finance snapshot</div>
-              <div className="mt-1 text-xs text-zinc-500">{monthId} cashflow dan budget.</div>
+              <div className="mt-1 text-xs text-zinc-500">{monthId} cashflow and budget.</div>
             </div>
             <Link
               href="/app/finance"
               className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-2 text-xs font-semibold text-zinc-100 transition-colors hover:bg-white/[0.05]">
-              Buka finance
+              Open finance
             </Link>
           </div>
           <div className="grid gap-4 px-5 py-5 sm:px-6">
@@ -295,7 +341,7 @@ export default function WorkspacePage() {
               <Progress value={budgetRatio} tone={budgetTone} />
             ) : (
               <div className="rounded-[22px] border border-dashed border-white/10 px-4 py-4 text-sm text-zinc-500">
-                Budget belum diset untuk bulan ini.
+                Budget is not set for this month.
               </div>
             )}
           </div>
@@ -308,18 +354,18 @@ export default function WorkspacePage() {
             <div>
               <div className="text-sm font-semibold">Notes desk</div>
               <div className="mt-1 text-xs text-zinc-500">
-                Buka note terbaru langsung ke panel editor.
+                Open recent notes directly in the editor pane.
               </div>
             </div>
             <Link
               href="/app/notes"
               className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-2 text-xs font-semibold text-zinc-100 transition-colors hover:bg-white/[0.05]">
-              Buka notes
+              Open notes
             </Link>
           </div>
           <div className="app-list">
             {noteDesk.length === 0 ? (
-              <EmptyState message="Belum ada note yang bisa dibuka." />
+              <EmptyState message="No notes available yet." />
             ) : (
               noteDesk.map((note) => (
                 <Link
@@ -339,7 +385,7 @@ export default function WorkspacePage() {
                         ) : null}
                       </div>
                       <div className="mt-2 line-clamp-2 text-sm leading-relaxed text-zinc-400">
-                        {note.content || 'Belum ada isi note.'}
+                        {note.content || 'No note content yet.'}
                       </div>
                     </div>
                     <div className="shrink-0 text-[11px] font-medium text-zinc-500">
@@ -357,21 +403,21 @@ export default function WorkspacePage() {
             <div>
               <div className="text-sm font-semibold">Recently done</div>
               <div className="mt-1 text-xs text-zinc-500">
-                Sedikit jejak progres biar kerjaan tetap kebaca.
+                A small trail of progress to keep work visible.
               </div>
             </div>
           </div>
           <div className="app-list">
             {recentlyDone.length === 0 ? (
-              <EmptyState message="Belum ada task yang selesai." />
+              <EmptyState message="No tasks completed yet." />
             ) : (
               recentlyDone.map((task) => (
                 <div key={task.id} className="app-list-row">
                   <div className="text-sm font-semibold text-zinc-100">{task.title}</div>
                   <div className="mt-1 text-xs text-zinc-500">
                     {task.completedAt
-                      ? `Selesai ${formatDateShort(task.completedAt)}`
-                      : 'Task selesai'}
+                      ? `Completed ${formatDateShort(task.completedAt)}`
+                      : 'Task completed'}
                   </div>
                 </div>
               ))

@@ -56,17 +56,17 @@ export function GoalModal({
     const nextDeadline = deadline ? new Date(`${deadline}T00:00:00`) : null;
 
     if (!cleanTitle) {
-      setError('Judul goal wajib diisi.');
+      setError('Goal title is required.');
       return;
     }
 
     if (!Number.isFinite(current) || !Number.isFinite(target) || target <= 0) {
-      setError('Nilai progress dan target harus valid, target > 0.');
+      setError('Progress and target must be valid, target > 0.');
       return;
     }
 
     if (nextDeadline && Number.isNaN(nextDeadline.getTime())) {
-      setError('Tanggal goal tidak valid.');
+      setError('Goal date is invalid.');
       return;
     }
 
@@ -86,44 +86,44 @@ export function GoalModal({
 
       if (initialGoal) {
         await updateGoal(uid, initialGoal.id, payload);
-        toast.success('Goal diperbarui.');
+        toast.success('Goal updated.');
       } else {
         await addGoal(uid, payload);
-        toast.success('Goal tersimpan.');
+        toast.success('Goal saved.');
       }
 
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Gagal menyimpan goal.');
-      toast.danger('Gagal menyimpan goal.');
+      setError(err instanceof Error ? err.message : 'Failed to save goal.');
+      toast.danger('Failed to save goal.');
     } finally {
       setSubmitting(false);
     }
   }
 
   return (
-    <Modal open={open} title={initialGoal ? 'Edit goal' : 'Goal baru'} onClose={onClose}>
+    <Modal open={open} title={initialGoal ? 'Edit goal' : 'New goal'} onClose={onClose}>
       <form onSubmit={onSubmit} className="flex flex-col gap-4">
         {error ? <Alert variant="danger">{error}</Alert> : null}
 
         <Input
-          label="Judul"
+          label="Title"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          placeholder="Publish 8 artikel bulan ini"
+          placeholder="Publish 8 articles this month"
           required
         />
 
         <Textarea
-          label="Deskripsi"
+          label="Description"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          placeholder="Catatan atau konteks target ini"
+          placeholder="Notes or context for this goal"
         />
 
         <div className="grid gap-4 md:grid-cols-2">
           <Input
-            label="Progress sekarang"
+            label="Current progress"
             type="number"
             min={0}
             step={1}
@@ -145,7 +145,7 @@ export function GoalModal({
             label="Unit"
             value={unit}
             onChange={(e) => setUnit(e.target.value)}
-            placeholder="artikel, jam, task"
+            placeholder="articles, hours, tasks"
           />
           <Input
             label="Deadline"
@@ -167,10 +167,10 @@ export function GoalModal({
 
         <div className="flex items-center justify-end gap-3">
           <Button variant="secondary" type="button" onClick={onClose}>
-            Batal
+            Cancel
           </Button>
           <Button type="submit" disabled={submitting}>
-            {submitting ? 'Menyimpan…' : initialGoal ? 'Simpan perubahan' : 'Simpan goal'}
+            {submitting ? 'Saving…' : initialGoal ? 'Save changes' : 'Save goal'}
           </Button>
         </div>
       </form>

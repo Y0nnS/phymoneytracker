@@ -65,7 +65,7 @@ export function TaskModal({
     e.preventDefault();
     const cleanTitle = title.trim();
     if (!cleanTitle) {
-      setError('Judul task wajib diisi.');
+      setError('Task title is required.');
       return;
     }
 
@@ -74,13 +74,13 @@ export function TaskModal({
       numericEstimate !== null &&
       (!Number.isFinite(numericEstimate) || numericEstimate < 0)
     ) {
-      setError('Estimasi menit harus angka valid.');
+      setError('Estimate must be a valid number.');
       return;
     }
 
     const nextDueDate = dueDate ? new Date(`${dueDate}T00:00:00`) : null;
     if (nextDueDate && Number.isNaN(nextDueDate.getTime())) {
-      setError('Tanggal task tidak valid.');
+      setError('Task date is invalid.');
       return;
     }
 
@@ -102,39 +102,39 @@ export function TaskModal({
 
       if (initialTask) {
         await updateTask(uid, initialTask.id, payload);
-        toast.success('Task diperbarui.');
+        toast.success('Task updated.');
       } else {
         await addTask(uid, payload);
-        toast.success('Task tersimpan.');
+        toast.success('Task saved.');
       }
 
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Gagal menyimpan task.');
-      toast.danger('Gagal menyimpan task.');
+      setError(err instanceof Error ? err.message : 'Failed to save task.');
+      toast.danger('Failed to save task.');
     } finally {
       setSubmitting(false);
     }
   }
 
   return (
-    <Modal open={open} title={isEditing ? 'Edit task' : 'Task baru'} onClose={onClose}>
+    <Modal open={open} title={isEditing ? 'Edit task' : 'New task'} onClose={onClose}>
       <form onSubmit={onSubmit} className="flex flex-col gap-4">
         {error ? <Alert variant="danger">{error}</Alert> : null}
 
         <Input
-          label="Judul"
+          label="Title"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          placeholder="Contoh: Finalisasi landing page"
+          placeholder="Example: Finalize landing page"
           required
         />
 
         <Textarea
-          label="Deskripsi"
+          label="Description"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          placeholder="Detail singkat atau checklist tambahan"
+          placeholder="Short details or extra checklist"
         />
 
         <div className="grid gap-4 md:grid-cols-2">
@@ -149,7 +149,7 @@ export function TaskModal({
             ))}
           </Select>
           <Select
-            label="Prioritas"
+            label="Priority"
             value={priority}
             onChange={(e) => setPriority(e.target.value as TaskPriority)}>
             {TASK_PRIORITY_OPTIONS.map((option) => (
@@ -162,13 +162,13 @@ export function TaskModal({
 
         <div className="grid gap-4 md:grid-cols-2">
           <Input
-            label="Kategori"
+            label="Category"
             value={category}
             onChange={(e) => setCategory(e.target.value)}
             placeholder="Work, Personal, Study"
           />
           <Input
-            label="Deadline"
+            label="Due date"
             type="date"
             value={dueDate}
             onChange={(e) => setDueDate(e.target.value)}
@@ -177,7 +177,7 @@ export function TaskModal({
 
         <div className="grid gap-4 md:grid-cols-2">
           <Input
-            label="Estimasi (menit)"
+            label="Estimate (minutes)"
             type="number"
             min={0}
             step={5}
@@ -190,16 +190,16 @@ export function TaskModal({
             value={tags}
             onChange={(e) => setTags(e.target.value)}
             placeholder="frontend, urgent, deep work"
-            hint="Pisahkan dengan koma"
+            hint="Separate with commas"
           />
         </div>
 
         <div className="flex items-center justify-end gap-3">
           <Button variant="secondary" type="button" onClick={onClose}>
-            Batal
+            Cancel
           </Button>
           <Button type="submit" disabled={submitting}>
-            {submitting ? 'Menyimpan…' : isEditing ? 'Simpan perubahan' : 'Simpan task'}
+            {submitting ? 'Saving…' : isEditing ? 'Save changes' : 'Save task'}
           </Button>
         </div>
       </form>
