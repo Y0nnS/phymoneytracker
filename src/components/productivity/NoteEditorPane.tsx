@@ -202,6 +202,13 @@ export function NoteEditorPane({ noteId }: { noteId: string }) {
     }
   }
 
+  function removeDraftTag(tagToRemove: string) {
+    setDraft((current) => ({
+      ...current,
+      tags: current.tags.filter((tag) => tag !== tagToRemove),
+    }));
+  }
+
   if (error) {
     return <Alert variant="danger">{error}</Alert>;
   }
@@ -286,6 +293,24 @@ export function NoteEditorPane({ noteId }: { noteId: string }) {
               placeholder="Untitled note"
               className="w-full border-0 bg-transparent p-0 text-2xl font-semibold tracking-tight text-zinc-100 outline-none placeholder:text-zinc-600 sm:text-4xl"
             />
+
+            {draft.tags.length > 0 ? (
+              <div className="mt-2 flex flex-wrap gap-2">
+                {draft.tags.map((tag) => (
+                  <button
+                    key={tag}
+                    type="button"
+                    onClick={() => removeDraftTag(tag)}
+                    className="inline-flex items-center gap-2 rounded-full border border-blue-500/30 bg-blue-500/10 px-3 py-1.5 text-[11px] font-semibold text-blue-100 transition-colors hover:border-blue-400/40 hover:bg-blue-500/16 sm:text-xs">
+                    <span className="text-blue-200/75">#</span>
+                    <span>{tag}</span>
+                    <span aria-hidden="true" className="text-blue-200/70">
+                      ×
+                    </span>
+                  </button>
+                ))}
+              </div>
+            ) : null}
           </label>
 
           <TagInput
@@ -294,6 +319,7 @@ export function NoteEditorPane({ noteId }: { noteId: string }) {
             onChange={(tags) => setDraft((current) => ({ ...current, tags }))}
             suggestions={tagSuggestions}
             placeholder="Type a tag and press Enter"
+            hideSelectedTags
             hint="Pick an existing tag from the dropdown or type a new one. Click a tag to remove it."
           />
 
@@ -342,3 +368,4 @@ export function NoteEditorPane({ noteId }: { noteId: string }) {
     </>
   );
 }
+

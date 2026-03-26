@@ -12,6 +12,7 @@ export function TagInput({
   hint,
   placeholder = 'Type a tag and press Enter',
   maxTags = MAX_TAG_ITEMS,
+  hideSelectedTags = false,
   className,
 }: {
   label?: string;
@@ -21,6 +22,7 @@ export function TagInput({
   hint?: string;
   placeholder?: string;
   maxTags?: number;
+  hideSelectedTags?: boolean;
   className?: string;
 }) {
   const rootRef = React.useRef<HTMLLabelElement | null>(null);
@@ -107,21 +109,22 @@ export function TagInput({
       ) : null}
 
       <div className="relative">
-        <div
-          className="rounded-[22px] border border-white/10 bg-white/[0.03] px-3 py-3 transition-colors focus-within:border-blue-500/40 focus-within:bg-white/[0.05]">
+        <div className="rounded-[22px] border border-white/10 bg-white/[0.03] px-3 py-3 transition-colors focus-within:border-blue-500/40 focus-within:bg-white/[0.05]">
           <div className="flex flex-wrap items-center gap-2">
-            {value.map((tag) => (
-              <button
-                key={tag}
-                type="button"
-                onClick={() => removeTag(tag)}
-                className="inline-flex items-center gap-2 rounded-full border border-blue-500/30 bg-blue-500/12 px-3 py-1.5 text-[11px] font-semibold text-blue-100 transition-colors hover:border-blue-400/40 hover:bg-blue-500/18 sm:text-xs">
-                <span>{tag}</span>
-                <span aria-hidden="true" className="text-blue-200/70">
-                  ×
-                </span>
-              </button>
-            ))}
+            {hideSelectedTags
+              ? null
+              : value.map((tag) => (
+                  <button
+                    key={tag}
+                    type="button"
+                    onClick={() => removeTag(tag)}
+                    className="inline-flex items-center gap-2 rounded-full border border-blue-500/30 bg-blue-500/12 px-3 py-1.5 text-[11px] font-semibold text-blue-100 transition-colors hover:border-blue-400/40 hover:bg-blue-500/18 sm:text-xs">
+                    <span>{tag}</span>
+                    <span aria-hidden="true" className="text-blue-200/70">
+                      ×
+                    </span>
+                  </button>
+                ))}
 
             <input
               ref={inputRef}
