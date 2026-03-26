@@ -71,11 +71,11 @@ function NoteTagFilterDropdown({
   const selected = options.find((option) => option.value === value) ?? options[0];
 
   return (
-    <div ref={rootRef} className="relative min-w-[168px] flex-1">
+    <div ref={rootRef} className="relative min-w-[188px] sm:flex-none">
       <button
         type="button"
         onClick={() => setOpen((current) => !current)}
-        className="flex w-full items-center justify-between gap-3 rounded-full border border-white/10 bg-white/[0.03] px-3 py-2 text-left transition-colors hover:bg-white/[0.05]">
+        className="flex w-full items-center justify-between gap-3 rounded-[20px] border border-white/10 bg-white/[0.03] px-4 py-3 text-left transition-colors hover:bg-white/[0.05]">
         <div className="min-w-0">
           <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500">
             Tag filter
@@ -313,7 +313,7 @@ export function NotesSplitLayout({ children }: { children: React.ReactNode }) {
                   type="button"
                   onClick={() => setPinnedOnly((value) => !value)}
                   className={cn(
-                    'rounded-full border px-3 py-2 text-[11px] font-semibold transition-colors sm:text-xs',
+                    'rounded-[20px] border px-4 py-3 text-[11px] font-semibold transition-colors sm:text-xs',
                     pinnedOnly
                       ? 'border-blue-500/40 bg-blue-500/15 text-blue-100'
                       : 'border-white/10 bg-white/[0.03] text-zinc-300 hover:bg-white/[0.05]',
@@ -419,3 +419,4 @@ export function NotesSplitLayout({ children }: { children: React.ReactNode }) {
     </>
   );
 }
+

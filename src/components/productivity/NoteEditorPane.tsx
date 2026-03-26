@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import React from 'react';
 import { useRouter } from 'next/navigation';
+import { IconPin } from '@/components/icons';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { Alert } from '@/components/ui/Alert';
 import { Button } from '@/components/ui/Button';
@@ -124,10 +125,6 @@ export function NoteEditorPane({ noteId }: { noteId: string }) {
   }, [draft, note]);
 
   const normalizedSnapshot = React.useMemo(() => snapshotFromDraft(draft), [draft]);
-  const wordCount = React.useMemo(() => {
-    const trimmed = draft.content.trim();
-    return trimmed ? trimmed.split(/\s+/).length : 0;
-  }, [draft.content]);
 
   const persistDraft = React.useCallback(
     async (mode: 'auto' | 'manual') => {
@@ -260,11 +257,12 @@ export function NoteEditorPane({ noteId }: { noteId: string }) {
                 setDraft((current) => ({ ...current, pinned: !current.pinned }))
               }
               className={cn(
-                'rounded-full border px-3 py-2 text-[11px] font-semibold transition-colors sm:text-xs',
+                'inline-flex items-center gap-2 rounded-xl px-3 py-2 text-[11px] font-semibold transition-colors sm:text-xs',
                 draft.pinned
-                  ? 'border-blue-500/40 bg-blue-500/15 text-blue-100'
-                  : 'border-white/10 bg-white/[0.03] text-zinc-300 hover:bg-white/[0.05]',
+                  ? 'bg-blue-500/12 text-blue-100'
+                  : 'bg-transparent text-zinc-300 hover:bg-white/[0.05] hover:text-zinc-100',
               )}>
+              {IconPin({ className: 'h-3.5 w-3.5' })}
               {draft.pinned ? 'Pinned' : 'Pin note'}
             </button>
             <Button size="sm" variant="secondary" onClick={() => void persistDraft('manual')}>
@@ -280,7 +278,7 @@ export function NoteEditorPane({ noteId }: { noteId: string }) {
       <div className="grid gap-5 px-4 py-4 sm:gap-6 sm:px-6 sm:py-6">
         {saveError ? <Alert variant="danger">{saveError}</Alert> : null}
 
-        <div className="grid gap-4 border-b border-white/10 pb-5 xl:grid-cols-[minmax(0,1fr)_minmax(320px,.8fr)_180px]">
+        <div className="grid gap-4 border-b border-white/10 pb-5 xl:grid-cols-[minmax(0,1fr)_420px] xl:items-start">
           <label className="flex flex-col gap-2">
             <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-500">
               Title
@@ -320,25 +318,8 @@ export function NoteEditorPane({ noteId }: { noteId: string }) {
             suggestions={tagSuggestions}
             placeholder="Type a tag and press Enter"
             hideSelectedTags
-            hint="Pick an existing tag from the dropdown or type a new one. Click a tag to remove it."
+            className="xl:justify-self-end xl:w-full"
           />
-
-          <div className="grid grid-cols-2 gap-3 rounded-[20px] border border-white/10 bg-white/[0.02] px-3 py-3.5 sm:rounded-[24px] sm:px-4 sm:py-4">
-            <div>
-              <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-500">
-                Words
-              </div>
-              <div className="mt-2 text-base font-semibold text-zinc-100 sm:text-lg">{wordCount}</div>
-            </div>
-            <div>
-              <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-500">
-                Chars
-              </div>
-              <div className="mt-2 text-base font-semibold text-zinc-100 sm:text-lg">
-                {draft.content.length}
-              </div>
-            </div>
-          </div>
         </div>
 
         <div className="note-editor">
@@ -368,4 +349,9 @@ export function NoteEditorPane({ noteId }: { noteId: string }) {
     </>
   );
 }
+
+
+
+
+
 
