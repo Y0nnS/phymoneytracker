@@ -50,6 +50,7 @@ export type Note = {
   title: string;
   content: string;
   category: string;
+  tags: string[];
   pinned: boolean;
   createdAt?: Date;
   updatedAt?: Date;

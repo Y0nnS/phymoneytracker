@@ -22,13 +22,17 @@ export const TASK_PRIORITY_OPTIONS: Array<{ value: TaskPriority; label: string }
   { value: 'high', label: 'High' },
 ];
 
-export const NOTE_CATEGORY_OPTIONS = [
+export const MAX_TAG_ITEMS = 12;
+
+export const NOTE_TAG_SUGGESTIONS = [
   'General',
   'Ideas',
   'Meeting',
   'Journal',
   'Reference',
 ];
+
+export const NOTE_CATEGORY_OPTIONS = NOTE_TAG_SUGGESTIONS;
 
 export const GOAL_STATUS_OPTIONS: Array<{ value: GoalStatus; label: string }> = [
   { value: 'active', label: 'Active' },
@@ -76,13 +80,34 @@ const PLANNER_TYPE_ORDER: Record<PlannerBlockType, number> = {
 };
 
 export function parseTags(value: string) {
-  const parts = value
-    .split(',')
-    .map((item) => item.trim())
-    .filter(Boolean)
-    .slice(0, 12);
+  const parts = value.split(',');
 
-  return Array.from(new Set(parts));
+  return dedupeTags(parts);
+}
+
+export function normalizeTagLabel(value: string) {
+  return value.trim().replace(/\s+/g, ' ');
+}
+
+export function dedupeTags(values: string[], max = MAX_TAG_ITEMS) {
+  const next: string[] = [];
+  const seen = new Set<string>();
+
+  values.forEach((value) => {
+    const normalized = normalizeTagLabel(value);
+    const key = normalized.toLowerCase();
+
+    if (!normalized || seen.has(key) || next.length >= max) return;
+
+    seen.add(key);
+    next.push(normalized);
+  });
+
+  return next;
+}
+
+export function mergeTags(existing: string[], draft: string, max = MAX_TAG_ITEMS) {
+  return dedupeTags([...existing, ...draft.split(',')], max);
 }
 
 export function tagsToInput(tags: string[]) {

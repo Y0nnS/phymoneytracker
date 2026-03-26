@@ -14,6 +14,7 @@ import {
   writeBatch,
 } from 'firebase/firestore';
 import { firestore } from './client';
+import { dedupeTags, normalizeTagLabel } from '@/lib/productivity';
 import type { Note, NoteInput } from '@/lib/types';
 
 const MAX_BATCH_SIZE = 400;
@@ -23,11 +24,19 @@ function toDate(value: unknown) {
 }
 
 function mapNote(id: string, data: Record<string, unknown>): Note {
+  const fallbackCategory = typeof data.category === 'string' ? normalizeTagLabel(data.category) : 'General';
+  const tags = Array.isArray(data.tags)
+    ? dedupeTags(data.tags.filter((item): item is string => typeof item === 'string'))
+    : fallbackCategory && fallbackCategory.toLowerCase() !== 'general'
+      ? dedupeTags([fallbackCategory])
+      : [];
+
   return {
     id,
     title: typeof data.title === 'string' ? data.title : 'Untitled note',
     content: typeof data.content === 'string' ? data.content : '',
-    category: typeof data.category === 'string' ? data.category : 'General',
+    category: tags[0] ?? fallbackCategory,
+    tags,
     pinned: Boolean(data.pinned),
     createdAt: toDate(data.createdAt),
     updatedAt: toDate(data.updatedAt),
@@ -36,9 +45,23 @@ function mapNote(id: string, data: Record<string, unknown>): Note {
 
 function serializeNoteInput(input: Partial<NoteInput>) {
   const payload: Record<string, unknown> = {};
+  const tags = Array.isArray(input.tags) ? dedupeTags(input.tags) : null;
+
   if (typeof input.title === 'string') payload.title = input.title.trim();
   if (typeof input.content === 'string') payload.content = input.content.trim();
-  if (typeof input.category === 'string') payload.category = input.category.trim() || 'General';
+  if (tags) payload.tags = tags;
+
+  const fallbackCategory =
+    tags && tags.length > 0
+      ? tags[0]
+      : typeof input.category === 'string'
+        ? normalizeTagLabel(input.category)
+        : undefined;
+
+  if (fallbackCategory !== undefined) {
+    payload.category = fallbackCategory || 'General';
+  }
+
   if (typeof input.pinned === 'boolean') payload.pinned = input.pinned;
   return payload;
 }

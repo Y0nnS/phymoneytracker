@@ -5,11 +5,11 @@ import { Alert } from '@/components/ui/Alert';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
-import { Select } from '@/components/ui/Select';
+import { TagInput } from '@/components/ui/TagInput';
 import { Textarea } from '@/components/ui/Textarea';
 import { useToast } from '@/components/ui/Toast';
 import { addNote, updateNote } from '@/lib/firebase/notes';
-import { NOTE_CATEGORY_OPTIONS } from '@/lib/productivity';
+import { NOTE_TAG_SUGGESTIONS, dedupeTags } from '@/lib/productivity';
 import type { Note } from '@/lib/types';
 
 export function NoteModal({
@@ -26,7 +26,7 @@ export function NoteModal({
   const toast = useToast();
   const [title, setTitle] = React.useState('');
   const [content, setContent] = React.useState('');
-  const [category, setCategory] = React.useState('General');
+  const [tags, setTags] = React.useState<string[]>([]);
   const [pinned, setPinned] = React.useState(false);
   const [submitting, setSubmitting] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
@@ -35,7 +35,7 @@ export function NoteModal({
     if (!open) return;
     setTitle(initialNote?.title ?? '');
     setContent(initialNote?.content ?? '');
-    setCategory(initialNote?.category ?? 'General');
+    setTags(dedupeTags(initialNote?.tags ?? []));
     setPinned(initialNote?.pinned ?? false);
     setSubmitting(false);
     setError(null);
@@ -45,6 +45,7 @@ export function NoteModal({
     e.preventDefault();
     const cleanTitle = title.trim();
     const cleanContent = content.trim();
+    const cleanTags = dedupeTags(tags);
 
     if (!cleanTitle && !cleanContent) {
       setError('Please add a title or content.');
@@ -58,7 +59,8 @@ export function NoteModal({
       const payload = {
         title: cleanTitle || 'Quick note',
         content: cleanContent,
-        category,
+        category: cleanTags[0] ?? 'General',
+        tags: cleanTags,
         pinned,
       };
 
@@ -92,16 +94,14 @@ export function NoteModal({
         />
 
         <div className="grid gap-4 md:grid-cols-2">
-          <Select
-            label="Category"
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}>
-            {NOTE_CATEGORY_OPTIONS.map((option) => (
-              <option key={option} value={option}>
-                {option}
-              </option>
-            ))}
-          </Select>
+          <TagInput
+            label="Tags"
+            value={tags}
+            onChange={setTags}
+            suggestions={NOTE_TAG_SUGGESTIONS}
+            placeholder="Type a tag and press Enter"
+            hint="Choose from existing tags or type a new one."
+          />
           <label className="flex flex-col gap-1.5">
             <span className="text-sm font-medium text-zinc-200">Pin to top</span>
             <label className="flex h-10 items-center gap-3 rounded-md border border-zinc-800 bg-zinc-950 px-3 text-sm text-zinc-300">

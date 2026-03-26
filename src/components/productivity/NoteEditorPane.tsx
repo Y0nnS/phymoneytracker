@@ -7,18 +7,19 @@ import { useAuth } from '@/components/auth/AuthProvider';
 import { Alert } from '@/components/ui/Alert';
 import { Button } from '@/components/ui/Button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { TagInput } from '@/components/ui/TagInput';
 import { useToast } from '@/components/ui/Toast';
 import { useNotes } from '@/hooks/useNotes';
 import { formatDateTime } from '@/lib/date';
 import { deleteNote, updateNote } from '@/lib/firebase/notes';
-import { NOTE_CATEGORY_OPTIONS } from '@/lib/productivity';
+import { NOTE_TAG_SUGGESTIONS, dedupeTags } from '@/lib/productivity';
 import type { Note } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
 type Draft = {
   title: string;
   content: string;
-  category: string;
+  tags: string[];
   pinned: boolean;
 };
 
@@ -28,16 +29,19 @@ function draftFromNote(note: Note): Draft {
   return {
     title: note.title === 'Untitled note' ? '' : note.title,
     content: note.content,
-    category: note.category || 'General',
+    tags: dedupeTags(note.tags),
     pinned: note.pinned,
   };
 }
 
 function normalizeDraft(draft: Draft) {
+  const tags = dedupeTags(draft.tags);
+
   return {
     title: draft.title.trim() || 'Untitled note',
     content: draft.content.trim(),
-    category: draft.category.trim() || 'General',
+    category: tags[0] ?? 'General',
+    tags,
     pinned: draft.pinned,
   };
 }
@@ -50,7 +54,7 @@ function snapshotFromNote(note: Note) {
   return JSON.stringify({
     title: note.title.trim() || 'Untitled note',
     content: note.content.trim(),
-    category: note.category.trim() || 'General',
+    tags: dedupeTags(note.tags),
     pinned: note.pinned,
   });
 }
@@ -73,18 +77,19 @@ export function NoteEditorPane({ noteId }: { noteId: string }) {
     [noteId, notes],
   );
 
-  const categoryOptions = React.useMemo(
+  const tagSuggestions = React.useMemo(
     () =>
-      Array.from(
-        new Set([...NOTE_CATEGORY_OPTIONS, ...notes.map((item) => item.category)]),
-      ).sort(),
+      dedupeTags([
+        ...NOTE_TAG_SUGGESTIONS,
+        ...notes.flatMap((item) => item.tags),
+      ]).sort((a, b) => a.localeCompare(b)),
     [notes],
   );
 
   const [draft, setDraft] = React.useState<Draft>({
     title: '',
     content: '',
-    category: 'General',
+    tags: [],
     pinned: false,
   });
   const [saveState, setSaveState] = React.useState<SaveState>('idle');
@@ -268,7 +273,7 @@ export function NoteEditorPane({ noteId }: { noteId: string }) {
       <div className="grid gap-5 px-4 py-4 sm:gap-6 sm:px-6 sm:py-6">
         {saveError ? <Alert variant="danger">{saveError}</Alert> : null}
 
-        <div className="grid gap-4 border-b border-white/10 pb-5 xl:grid-cols-[minmax(0,1fr)_220px_180px]">
+        <div className="grid gap-4 border-b border-white/10 pb-5 xl:grid-cols-[minmax(0,1fr)_minmax(320px,.8fr)_180px]">
           <label className="flex flex-col gap-2">
             <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-500">
               Title
@@ -283,23 +288,14 @@ export function NoteEditorPane({ noteId }: { noteId: string }) {
             />
           </label>
 
-          <label className="flex flex-col gap-2">
-            <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-500">
-              Category
-            </span>
-            <select
-              value={draft.category}
-              onChange={(event) =>
-                setDraft((current) => ({ ...current, category: event.target.value }))
-              }
-              className="h-10 rounded-2xl border border-white/10 bg-white/[0.03] px-3 text-[13px] font-medium text-zinc-100 outline-none transition-colors focus:border-blue-500/40 sm:h-11 sm:px-4 sm:text-sm">
-              {categoryOptions.map((option) => (
-                <option key={option} value={option}>
-                  {option}
-                </option>
-              ))}
-            </select>
-          </label>
+          <TagInput
+            label="Tags"
+            value={draft.tags}
+            onChange={(tags) => setDraft((current) => ({ ...current, tags }))}
+            suggestions={tagSuggestions}
+            placeholder="Type a tag and press Enter"
+            hint="Pick an existing tag from the dropdown or type a new one. Click a tag to remove it."
+          />
 
           <div className="grid grid-cols-2 gap-3 rounded-[20px] border border-white/10 bg-white/[0.02] px-3 py-3.5 sm:rounded-[24px] sm:px-4 sm:py-4">
             <div>
