@@ -9,6 +9,7 @@ import {
   IconGrid,
   IconNote,
   IconPlus,
+  IconTrendingUp,
   IconWallet,
 } from '@/components/icons';
 import { cn } from '@/lib/utils';
@@ -24,17 +25,18 @@ const NAV: NavItem[] = [
   { href: '/app/tasks', label: 'Tasks', icon: IconCheckSquare },
   { href: '/app/notes', label: 'Notes', icon: IconNote },
   { href: '/app/finance', label: 'Finance', icon: IconWallet },
+  { href: '/app/markets', label: 'Markets', icon: IconTrendingUp },
   { href: '/app/settings', label: 'Settings', icon: IconGear },
 ];
 
 export function MobileNav({ onQuickCapture }: { onQuickCapture: () => void }) {
   const pathname = usePathname();
-  const left = NAV.slice(0, 2);
-  const right = NAV.slice(2);
+  const left = NAV.slice(0, 3);
+  const right = NAV.slice(3);
 
   return (
     <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-zinc-900 bg-zinc-950/95 backdrop-blur md:hidden">
-      <div className="grid w-full grid-cols-6 px-1.5">
+      <div className="grid w-full grid-cols-7 px-1.5">
         {left.map((item) => {
           const active =
             item.href === '/app'

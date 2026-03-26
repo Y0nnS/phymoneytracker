@@ -12,6 +12,7 @@ import {
   IconGrid,
   IconNote,
   IconPlus,
+  IconTrendingUp,
   IconWallet,
 } from '@/components/icons';
 import { Button } from '@/components/ui/Button';
@@ -22,6 +23,7 @@ const navItems = [
   { href: '/app/tasks', label: 'Tasks', icon: IconCheckSquare },
   { href: '/app/notes', label: 'Notes', icon: IconNote },
   { href: '/app/finance', label: 'Finance', icon: IconWallet },
+  { href: '/app/markets', label: 'Markets', icon: IconTrendingUp },
   { href: '/app/settings', label: 'Settings', icon: IconGear },
 ];
 
