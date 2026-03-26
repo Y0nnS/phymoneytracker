@@ -49,6 +49,8 @@ export function NotesSplitLayout({ children }: { children: React.ReactNode }) {
   const [categoryFilter, setCategoryFilter] = React.useState<CategoryFilter>('all');
   const [pinnedOnly, setPinnedOnly] = React.useState(false);
   const [creatingNote, setCreatingNote] = React.useState(false);
+  const creatingNoteRef = React.useRef(false);
+  const composeRequestKeyRef = React.useRef<string | null>(null);
 
   const sorted = React.useMemo(() => sortNotes(notes), [notes]);
   const selectedId = React.useMemo(() => {
@@ -79,9 +81,18 @@ export function NotesSplitLayout({ children }: { children: React.ReactNode }) {
   }, [categoryFilter, pinnedOnly, query, sorted]);
 
   const createAndOpenNote = React.useCallback(
-    async (replaceHistory = false) => {
-      if (!user || creatingNote) return;
+    async ({
+      replaceHistory = false,
+      requestKey,
+    }: {
+      replaceHistory?: boolean;
+      requestKey?: string;
+    } = {}) => {
+      if (!user || creatingNoteRef.current) return;
+
+      creatingNoteRef.current = true;
       setCreatingNote(true);
+
       try {
         const ref = await addNote(user.uid, {
           title: 'Untitled note',
@@ -97,19 +108,32 @@ export function NotesSplitLayout({ children }: { children: React.ReactNode }) {
         }
         toast.success('New note is ready.');
       } catch (err) {
+        if (requestKey && composeRequestKeyRef.current === requestKey) {
+          composeRequestKeyRef.current = null;
+        }
         toast.danger(err instanceof Error ? err.message : 'Failed to create a new note.');
       } finally {
+        creatingNoteRef.current = false;
         setCreatingNote(false);
       }
     },
-    [creatingNote, router, toast, user],
+    [router, toast, user],
   );
 
   React.useEffect(() => {
-    if (searchParams.get('compose') !== 'note') return;
-    if (!user || creatingNote) return;
-    void createAndOpenNote(true);
-  }, [createAndOpenNote, creatingNote, searchParams, user]);
+    const composeMode = searchParams.get('compose');
+
+    if (composeMode !== 'note') {
+      composeRequestKeyRef.current = null;
+      return;
+    }
+
+    const requestKey = `${pathname}?${searchParams.toString()}`;
+    if (!user || creatingNoteRef.current || composeRequestKeyRef.current === requestKey) return;
+
+    composeRequestKeyRef.current = requestKey;
+    void createAndOpenNote({ replaceHistory: true, requestKey });
+  }, [createAndOpenNote, pathname, searchParams, user]);
 
   return (
     <div className="flex flex-col gap-4">
