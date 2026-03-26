@@ -9,10 +9,21 @@ import { Topbar } from '@/components/layout/Topbar';
 import { MobileNav } from '@/components/layout/MobileNav';
 
 export function AppShell({ children }: { children: React.ReactNode }) {
+  const SIDEBAR_STATE_KEY = 'productivity-space.sidebar-collapsed';
   const { user, loading } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
   const [quickCaptureOpen, setQuickCaptureOpen] = React.useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = React.useState(false);
+
+  React.useEffect(() => {
+    const saved = window.localStorage.getItem(SIDEBAR_STATE_KEY);
+    setSidebarCollapsed(saved === 'true');
+  }, []);
+
+  React.useEffect(() => {
+    window.localStorage.setItem(SIDEBAR_STATE_KEY, String(sidebarCollapsed));
+  }, [sidebarCollapsed]);
 
   React.useEffect(() => {
     if (!loading && !user) router.replace('/sign-in');
@@ -52,9 +63,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="h-dvh overflow-hidden bg-zinc-950 text-zinc-100">
       <div className="flex h-full">
-        <Sidebar onQuickCapture={() => setQuickCaptureOpen(true)} />
+        <div
+          className="app-sidebar-shell hidden md:shrink-0 md:block"
+          data-collapsed={sidebarCollapsed ? 'true' : 'false'}>
+          <Sidebar onQuickCapture={() => setQuickCaptureOpen(true)} />
+        </div>
         <div className="flex min-w-0 flex-1 flex-col overflow-y-auto overflow-x-hidden">
-          <Topbar onQuickCapture={() => setQuickCaptureOpen(true)} />
+          <Topbar
+            onQuickCapture={() => setQuickCaptureOpen(true)}
+            sidebarCollapsed={sidebarCollapsed}
+            onToggleSidebar={() => setSidebarCollapsed((value) => !value)}
+          />
           <div
             key={pathname}
             className="flex-1 px-3 py-4 pb-24 motion-reduce:animate-none motion-safe:animate-[page-in_180ms_ease-out] sm:px-6 sm:py-6 md:pb-6">

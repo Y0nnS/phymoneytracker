@@ -2,7 +2,7 @@
 
 import { usePathname } from 'next/navigation';
 import { monthIdFromDate } from '@/lib/date';
-import { IconPlus } from '@/components/icons';
+import { IconChevronLeft, IconChevronRight, IconPlus } from '@/components/icons';
 import { Button } from '@/components/ui/Button';
 
 const TITLES: Array<{ prefix: string; title: string }> = [
@@ -20,7 +20,15 @@ function titleFromPath(pathname: string) {
   return match?.title ?? 'Workspace';
 }
 
-export function Topbar({ onQuickCapture }: { onQuickCapture: () => void }) {
+export function Topbar({
+  onQuickCapture,
+  sidebarCollapsed,
+  onToggleSidebar,
+}: {
+  onQuickCapture: () => void;
+  sidebarCollapsed: boolean;
+  onToggleSidebar: () => void;
+}) {
   const pathname = usePathname();
   const title = titleFromPath(pathname);
   const monthId = monthIdFromDate(new Date());
@@ -28,9 +36,22 @@ export function Topbar({ onQuickCapture }: { onQuickCapture: () => void }) {
   return (
     <header className="sticky top-0 z-10 border-b border-zinc-900 bg-zinc-950/90 backdrop-blur">
       <div className="flex items-center justify-between gap-3 px-4 py-3 sm:gap-4 sm:px-6 sm:py-4">
-        <div className="min-w-0">
-          <div className="text-[11px] font-semibold text-zinc-500 sm:text-xs">{monthId}</div>
-          <div className="truncate text-sm font-semibold sm:text-base">{title}</div>
+        <div className="flex min-w-0 items-center gap-3">
+          <Button
+            size="sm"
+            variant="secondary"
+            onClick={onToggleSidebar}
+            className="hidden h-10 items-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-3 text-zinc-200 hover:bg-white/[0.06] md:inline-flex"
+            aria-label={sidebarCollapsed ? 'Show sidebar' : 'Hide sidebar'}>
+            {sidebarCollapsed
+              ? IconChevronRight({ className: 'h-4 w-4' })
+              : IconChevronLeft({ className: 'h-4 w-4' })}
+            <span>{sidebarCollapsed ? 'Show menu' : 'Hide menu'}</span>
+          </Button>
+          <div className="min-w-0">
+            <div className="text-[11px] font-semibold text-zinc-500 sm:text-xs">{monthId}</div>
+            <div className="truncate text-sm font-semibold sm:text-base">{title}</div>
+          </div>
         </div>
         <div className="flex items-center gap-2">
           <Button

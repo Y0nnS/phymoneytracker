@@ -45,7 +45,7 @@ export function Sidebar({ onQuickCapture }: { onQuickCapture: () => void }) {
   }
 
   return (
-    <aside className="hidden w-72 shrink-0 border-r border-zinc-900 bg-zinc-950 md:sticky md:top-0 md:flex md:h-dvh md:self-start md:flex-col md:overflow-hidden">
+    <aside className="app-sidebar-panel hidden w-72 shrink-0 border-r border-zinc-900 bg-zinc-950 md:sticky md:top-0 md:flex md:h-dvh md:self-start md:flex-col md:overflow-hidden">
       <div className="flex flex-col gap-4 px-5 py-6">
         <div className="flex items-center justify-between gap-3">
           <Link href="/app" className="text-sm font-semibold tracking-wide">

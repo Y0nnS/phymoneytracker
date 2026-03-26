@@ -13,10 +13,49 @@ import { dateToISO } from '@/lib/date';
 import {
   TASK_PRIORITY_OPTIONS,
   TASK_STATUS_OPTIONS,
-  parseTags,
-  tagsToInput,
 } from '@/lib/productivity';
 import type { Task, TaskPriority, TaskStatus } from '@/lib/types';
+
+const MAX_TASK_TAGS = 12;
+
+function normalizeTag(tag: string) {
+  return tag.trim().replace(/\s+/g, ' ');
+}
+
+function dedupeTags(values: string[]) {
+  const next: string[] = [];
+  const seen = new Set<string>();
+
+  values.forEach((value) => {
+    const tag = normalizeTag(value);
+    const key = tag.toLowerCase();
+
+    if (!tag || seen.has(key) || next.length >= MAX_TASK_TAGS) return;
+
+    seen.add(key);
+    next.push(tag);
+  });
+
+  return next;
+}
+
+function parseTagDraft(value: string) {
+  return dedupeTags(value.split(','));
+}
+
+function mergeTags(existing: string[], draft: string) {
+  return dedupeTags([...existing, ...parseTagDraft(draft)]);
+}
+
+function initialTaskTags(task?: Task | null) {
+  if (!task) return [];
+  if (task.tags.length > 0) return dedupeTags(task.tags);
+
+  const fallback = normalizeTag(task.category);
+  if (!fallback || fallback.toLowerCase() === 'general') return [];
+
+  return [fallback];
+}
 
 export function TaskModal({
   uid,
@@ -34,14 +73,15 @@ export function TaskModal({
   const [description, setDescription] = React.useState('');
   const [status, setStatus] = React.useState<TaskStatus>('inbox');
   const [priority, setPriority] = React.useState<TaskPriority>('medium');
-  const [category, setCategory] = React.useState('General');
   const [dueDate, setDueDate] = React.useState('');
   const [estimateMinutes, setEstimateMinutes] = React.useState('');
-  const [tags, setTags] = React.useState('');
+  const [tags, setTags] = React.useState<string[]>([]);
+  const [tagInput, setTagInput] = React.useState('');
   const [submitting, setSubmitting] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
   const isEditing = Boolean(initialTask);
+  const tagLimitReached = tags.length >= MAX_TASK_TAGS;
 
   React.useEffect(() => {
     if (!open) return;
@@ -49,17 +89,40 @@ export function TaskModal({
     setDescription(initialTask?.description ?? '');
     setStatus(initialTask?.status ?? 'inbox');
     setPriority(initialTask?.priority ?? 'medium');
-    setCategory(initialTask?.category ?? 'General');
     setDueDate(initialTask?.dueDate ? dateToISO(initialTask.dueDate) : '');
     setEstimateMinutes(
       typeof initialTask?.estimateMinutes === 'number'
         ? String(initialTask.estimateMinutes)
         : '',
     );
-    setTags(initialTask?.tags ? tagsToInput(initialTask.tags) : '');
+    setTags(initialTaskTags(initialTask));
+    setTagInput('');
     setSubmitting(false);
     setError(null);
   }, [open, initialTask]);
+
+  function commitTagInput() {
+    if (!tagInput.trim()) return;
+    setTags((current) => mergeTags(current, tagInput));
+    setTagInput('');
+  }
+
+  function removeTag(tagToRemove: string) {
+    setTags((current) => current.filter((tag) => tag !== tagToRemove));
+  }
+
+  function onTagKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
+    if ((event.key === 'Enter' || event.key === ',' || event.key === 'Tab') && tagInput.trim()) {
+      event.preventDefault();
+      commitTagInput();
+      return;
+    }
+
+    if (event.key === 'Backspace' && !tagInput) {
+      event.preventDefault();
+      setTags((current) => current.slice(0, -1));
+    }
+  }
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -84,6 +147,8 @@ export function TaskModal({
       return;
     }
 
+    const nextTags = mergeTags(tags, tagInput);
+
     setSubmitting(true);
     setError(null);
 
@@ -93,10 +158,10 @@ export function TaskModal({
         description: description.trim(),
         status,
         priority,
-        category: category.trim() || 'General',
+        category: nextTags[0] ?? 'General',
         dueDate: nextDueDate,
         estimateMinutes: numericEstimate === null ? null : Math.round(numericEstimate),
-        tags: parseTags(tags),
+        tags: nextTags,
         completedAt: status === 'done' ? initialTask?.completedAt ?? new Date() : null,
       };
 
@@ -162,20 +227,11 @@ export function TaskModal({
 
         <div className="grid gap-4 md:grid-cols-2">
           <Input
-            label="Category"
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
-            placeholder="Work, Personal, Study"
-          />
-          <Input
             label="Due date"
             type="date"
             value={dueDate}
             onChange={(e) => setDueDate(e.target.value)}
           />
-        </div>
-
-        <div className="grid gap-4 md:grid-cols-2">
           <Input
             label="Estimate (minutes)"
             type="number"
@@ -185,14 +241,38 @@ export function TaskModal({
             onChange={(e) => setEstimateMinutes(e.target.value)}
             placeholder="25"
           />
-          <Input
-            label="Tags"
-            value={tags}
-            onChange={(e) => setTags(e.target.value)}
-            placeholder="frontend, urgent, deep work"
-            hint="Separate with commas"
-          />
         </div>
+
+        <label className="flex flex-col gap-1.5">
+          <span className="text-sm font-medium text-zinc-200">Tags</span>
+          <div className="rounded-2xl border border-zinc-800 bg-zinc-950/80 px-3 py-3 transition-colors focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500/20">
+            <div className="flex flex-wrap items-center gap-2">
+              {tags.map((tag) => (
+                <button
+                  key={tag}
+                  type="button"
+                  onClick={() => removeTag(tag)}
+                  className="inline-flex items-center gap-2 rounded-full border border-blue-500/30 bg-blue-500/12 px-3 py-1.5 text-[12px] font-semibold text-blue-100 transition-colors hover:border-blue-400/40 hover:bg-blue-500/18">
+                  <span>{tag}</span>
+                  <span aria-hidden="true" className="text-blue-200/70">×</span>
+                </button>
+              ))}
+
+              <input
+                value={tagInput}
+                onChange={(e) => setTagInput(e.target.value)}
+                onKeyDown={onTagKeyDown}
+                onBlur={() => commitTagInput()}
+                placeholder={tagLimitReached ? 'Tag limit reached' : tags.length > 0 ? 'Add another tag' : 'Type a tag and press Enter'}
+                disabled={tagLimitReached}
+                className="min-w-[160px] flex-1 border-0 bg-transparent px-1 py-1 text-[13px] text-zinc-100 outline-none placeholder:text-zinc-500 disabled:cursor-not-allowed disabled:text-zinc-500 sm:text-sm"
+              />
+            </div>
+          </div>
+          <span className="text-[11px] text-zinc-500 sm:text-xs">
+            Press Enter, comma, or Tab to add tags. Click a tag to remove it.
+          </span>
+        </label>
 
         <div className="flex items-center justify-end gap-3">
           <Button variant="secondary" type="button" onClick={onClose}>
