@@ -6,11 +6,12 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { Alert } from '@/components/ui/Alert';
 import { Button } from '@/components/ui/Button';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Input } from '@/components/ui/Input';
 import { useToast } from '@/components/ui/Toast';
 import { useNotes } from '@/hooks/useNotes';
 import { formatDateTime } from '@/lib/date';
-import { addNote } from '@/lib/firebase/notes';
+import { addNote, deleteAllNotes } from '@/lib/firebase/notes';
 import { NOTE_CATEGORY_OPTIONS } from '@/lib/productivity';
 import type { Note } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -49,6 +50,8 @@ export function NotesSplitLayout({ children }: { children: React.ReactNode }) {
   const [categoryFilter, setCategoryFilter] = React.useState<CategoryFilter>('all');
   const [pinnedOnly, setPinnedOnly] = React.useState(false);
   const [creatingNote, setCreatingNote] = React.useState(false);
+  const [deleteAllOpen, setDeleteAllOpen] = React.useState(false);
+  const [deletingAll, setDeletingAll] = React.useState(false);
   const creatingNoteRef = React.useRef(false);
   const composeRequestKeyRef = React.useRef<string | null>(null);
 
@@ -135,119 +138,165 @@ export function NotesSplitLayout({ children }: { children: React.ReactNode }) {
     void createAndOpenNote({ replaceHistory: true, requestKey });
   }, [createAndOpenNote, pathname, searchParams, user]);
 
+  const handleDeleteAllNotes = React.useCallback(async () => {
+    if (!user || deletingAll || notes.length === 0) return;
+
+    setDeletingAll(true);
+
+    try {
+      const deletedCount = await deleteAllNotes(user.uid);
+      setDeleteAllOpen(false);
+      router.replace('/app/notes');
+      toast.success(
+        deletedCount > 0 ? `${deletedCount} notes deleted.` : 'No notes to delete.',
+      );
+    } catch (err) {
+      toast.danger(err instanceof Error ? err.message : 'Failed to delete all notes.');
+    } finally {
+      setDeletingAll(false);
+    }
+  }, [deletingAll, notes.length, router, toast, user]);
+
   return (
-    <div className="flex flex-col gap-4">
-      <section className="note-shell">
-        <aside className="note-sidebar">
-          <div className="border-b border-white/10 px-4 py-4 sm:px-5 sm:py-5">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-500 sm:text-xs">
-                  Second brain
+    <>
+      <div className="flex flex-col gap-4">
+        <section className="note-shell">
+          <aside className="note-sidebar">
+            <div className="border-b border-white/10 px-4 py-4 sm:px-5 sm:py-5">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-500 sm:text-xs">
+                    Second brain
+                  </div>
+                  <h1 className="mt-2 text-xl font-semibold tracking-tight text-zinc-100 sm:text-2xl">
+                    Notes
+                  </h1>
+                  <div className="mt-2 text-[12px] text-zinc-400 sm:text-sm">
+                    {filteredNotes.length} of {notes.length} notes
+                  </div>
                 </div>
-                <h1 className="mt-2 text-xl font-semibold tracking-tight text-zinc-100 sm:text-2xl">
-                  Notes
-                </h1>
-                <div className="mt-2 text-[12px] text-zinc-400 sm:text-sm">
-                  {filteredNotes.length} of {notes.length} notes
+                <div className="flex items-center gap-2">
+                  {notes.length > 0 ? (
+                    <Button
+                      size="sm"
+                      variant="danger"
+                      onClick={() => setDeleteAllOpen(true)}
+                      disabled={deletingAll}>
+                      {deletingAll ? 'Deleting…' : 'Delete all'}
+                    </Button>
+                  ) : null}
+                  <Button
+                    size="sm"
+                    onClick={() => void createAndOpenNote()}
+                    disabled={creatingNote || deletingAll}>
+                    {creatingNote ? 'Creating…' : 'New'}
+                  </Button>
                 </div>
               </div>
-              <Button
-                size="sm"
-                onClick={() => void createAndOpenNote()}
-                disabled={creatingNote}>
-                {creatingNote ? 'Creating…' : 'New'}
-              </Button>
             </div>
-          </div>
 
-          <div className="border-b border-white/10 px-4 py-4 sm:px-5">
-            <Input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search title, content, or category"
-            />
-            <div className="mt-3 flex flex-wrap gap-2">
-              <button
-                type="button"
-                onClick={() => setPinnedOnly((value) => !value)}
-                className={cn(
-                  'rounded-full border px-3 py-1.5 text-[11px] font-semibold transition-colors sm:text-xs',
-                  pinnedOnly
-                    ? 'border-blue-500/40 bg-blue-500/15 text-blue-100'
-                    : 'border-white/10 bg-white/[0.03] text-zinc-300 hover:bg-white/[0.05]',
-                )}>
-                {pinnedOnly ? 'Pinned only' : 'All notes'}
-              </button>
-              {categoryOptions.map((category) => (
+            <div className="border-b border-white/10 px-4 py-4 sm:px-5">
+              <Input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search title, content, or category"
+              />
+              <div className="mt-3 flex flex-wrap gap-2">
                 <button
-                  key={category}
                   type="button"
-                  onClick={() =>
-                    setCategoryFilter((current) =>
-                      current === category ? 'all' : category,
-                    )
-                  }
+                  onClick={() => setPinnedOnly((value) => !value)}
                   className={cn(
                     'rounded-full border px-3 py-1.5 text-[11px] font-semibold transition-colors sm:text-xs',
-                    categoryFilter === category
-                      ? 'border-white/20 bg-white/[0.08] text-zinc-100'
-                      : 'border-white/10 bg-transparent text-zinc-400 hover:bg-white/[0.03] hover:text-zinc-200',
+                    pinnedOnly
+                      ? 'border-blue-500/40 bg-blue-500/15 text-blue-100'
+                      : 'border-white/10 bg-white/[0.03] text-zinc-300 hover:bg-white/[0.05]',
                   )}>
-                  {category}
+                  {pinnedOnly ? 'Pinned only' : 'All notes'}
                 </button>
-              ))}
+                {categoryOptions.map((category) => (
+                  <button
+                    key={category}
+                    type="button"
+                    onClick={() =>
+                      setCategoryFilter((current) =>
+                        current === category ? 'all' : category,
+                      )
+                    }
+                    className={cn(
+                      'rounded-full border px-3 py-1.5 text-[11px] font-semibold transition-colors sm:text-xs',
+                      categoryFilter === category
+                        ? 'border-white/20 bg-white/[0.08] text-zinc-100'
+                        : 'border-white/10 bg-transparent text-zinc-400 hover:bg-white/[0.03] hover:text-zinc-200',
+                    )}>
+                    {category}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
 
-          {error ? <Alert variant="danger">{error}</Alert> : null}
+            {error ? <Alert variant="danger">{error}</Alert> : null}
 
-          <div className="min-h-0 flex-1 overflow-y-auto">
-            {loading ? (
-              <EmptySidebarState message="Loading notes..." />
-            ) : filteredNotes.length === 0 ? (
-              <EmptySidebarState message="No notes match this filter." />
-            ) : (
-              filteredNotes.map((note) => (
-                <Link
-                  key={note.id}
-                  href={`/app/notes/${note.id}`}
-                  className={cn(
-                    'note-list-row',
-                    selectedId === note.id && 'note-list-row-active',
-                  )}>
-                  <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2">
-                        <div className="truncate text-[13px] font-semibold text-zinc-100 sm:text-sm">
-                          {note.title}
+            <div className="min-h-0 flex-1 overflow-y-auto">
+              {loading ? (
+                <EmptySidebarState message="Loading notes..." />
+              ) : filteredNotes.length === 0 ? (
+                <EmptySidebarState message="No notes match this filter." />
+              ) : (
+                filteredNotes.map((note) => (
+                  <Link
+                    key={note.id}
+                    href={`/app/notes/${note.id}`}
+                    className={cn(
+                      'note-list-row',
+                      selectedId === note.id && 'note-list-row-active',
+                    )}>
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <div className="truncate text-[13px] font-semibold text-zinc-100 sm:text-sm">
+                            {note.title}
+                          </div>
+                          {note.pinned ? (
+                            <span className="rounded-full border border-blue-500/30 bg-blue-500/12 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-blue-100">
+                              Pin
+                            </span>
+                          ) : null}
                         </div>
-                        {note.pinned ? (
-                          <span className="rounded-full border border-blue-500/30 bg-blue-500/12 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-blue-100">
-                            Pin
-                          </span>
-                        ) : null}
+                        <div className="mt-2 line-clamp-2 text-[12px] leading-relaxed text-zinc-400 sm:text-sm">
+                          {notePreview(note)}
+                        </div>
                       </div>
-                      <div className="mt-2 line-clamp-2 text-[12px] leading-relaxed text-zinc-400 sm:text-sm">
-                        {notePreview(note)}
+                      <div className="shrink-0 text-[11px] font-medium text-zinc-500">
+                        {note.updatedAt ? formatDateTime(note.updatedAt) : 'Draft'}
                       </div>
                     </div>
-                    <div className="shrink-0 text-[11px] font-medium text-zinc-500">
-                      {note.updatedAt ? formatDateTime(note.updatedAt) : 'Draft'}
+                    <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-zinc-500">
+                      <span>{note.category}</span>
+                      {selectedId === note.id ? <span>Open</span> : null}
                     </div>
-                  </div>
-                  <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-zinc-500">
-                    <span>{note.category}</span>
-                    {selectedId === note.id ? <span>Open</span> : null}
-                  </div>
-                </Link>
-              ))
-            )}
-          </div>
-        </aside>
+                  </Link>
+                ))
+              )}
+            </div>
+          </aside>
 
-        <main className="note-pane">{children}</main>
-      </section>
-    </div>
+          <main className="note-pane">{children}</main>
+        </section>
+      </div>
+
+      <ConfirmDialog
+        open={deleteAllOpen}
+        title="Delete all notes?"
+        description={`This will permanently delete all ${notes.length} notes in your workspace. This action cannot be undone.`}
+        confirmText="Yes, delete all"
+        cancelText="Cancel"
+        confirmVariant="danger"
+        confirming={deletingAll}
+        onConfirm={handleDeleteAllNotes}
+        onClose={() => {
+          if (!deletingAll) setDeleteAllOpen(false);
+        }}
+      />
+    </>
   );
 }

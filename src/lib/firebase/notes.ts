@@ -4,15 +4,19 @@ import {
   collection,
   deleteDoc,
   doc,
+  getDocs,
   limit,
   onSnapshot,
   orderBy,
   query,
   serverTimestamp,
   updateDoc,
+  writeBatch,
 } from 'firebase/firestore';
 import { firestore } from './client';
 import type { Note, NoteInput } from '@/lib/types';
+
+const MAX_BATCH_SIZE = 400;
 
 function toDate(value: unknown) {
   return value instanceof Timestamp ? value.toDate() : undefined;
@@ -69,4 +73,27 @@ export async function updateNote(uid: string, id: string, input: Partial<NoteInp
 
 export async function deleteNote(uid: string, id: string) {
   return deleteDoc(doc(firestore, `users/${uid}/notes/${id}`));
+}
+
+export async function deleteAllNotes(uid: string) {
+  const colRef = collection(firestore, `users/${uid}/notes`);
+  const snap = await getDocs(colRef);
+
+  if (snap.empty) return 0;
+
+  let deletedCount = 0;
+
+  for (let index = 0; index < snap.docs.length; index += MAX_BATCH_SIZE) {
+    const batch = writeBatch(firestore);
+    const chunk = snap.docs.slice(index, index + MAX_BATCH_SIZE);
+
+    chunk.forEach((item) => {
+      batch.delete(item.ref);
+      deletedCount += 1;
+    });
+
+    await batch.commit();
+  }
+
+  return deletedCount;
 }
