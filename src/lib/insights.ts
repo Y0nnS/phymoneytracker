@@ -38,6 +38,21 @@ export function transactionsForMonth(transactions: Transaction[], monthId: strin
   return transactions.filter((t) => monthIdFromDate(t.date) === monthId);
 }
 
+export function sortTransactionsNewestFirst(transactions: Transaction[]) {
+  return [...transactions].sort((a, b) => {
+    const dateDiff = b.date.getTime() - a.date.getTime();
+    if (dateDiff !== 0) return dateDiff;
+
+    const createdDiff = (b.createdAt?.getTime() ?? 0) - (a.createdAt?.getTime() ?? 0);
+    if (createdDiff !== 0) return createdDiff;
+
+    const updatedDiff = (b.updatedAt?.getTime() ?? 0) - (a.updatedAt?.getTime() ?? 0);
+    if (updatedDiff !== 0) return updatedDiff;
+
+    return b.id.localeCompare(a.id);
+  });
+}
+
 export function sumByType(transactions: Transaction[], type: TransactionType) {
   return transactions
     .filter((t) => t.type === type)
@@ -186,4 +201,3 @@ export function monthlyTotals(transactions: Transaction[], monthIds: string[]) {
     };
   });
 }
-

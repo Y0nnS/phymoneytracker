@@ -7,9 +7,14 @@ export type Transaction = {
   category: string;
   note: string;
   date: Date;
+  createdAt?: Date;
+  updatedAt?: Date;
 };
 
-export type TransactionCreateInput = Omit<Transaction, 'id'>;
+export type TransactionCreateInput = Pick<
+  Transaction,
+  'type' | 'amount' | 'category' | 'note' | 'date'
+>;
 
 export type UserProfile = {
   uid: string;

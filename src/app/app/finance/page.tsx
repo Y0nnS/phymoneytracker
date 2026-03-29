@@ -23,6 +23,8 @@ import { setBudgetForMonth } from '@/lib/firebase/budgets';
 import { deleteTransaction } from '@/lib/firebase/transactions';
 import {
   dateKeyLocal,
+  monthIdLabel,
+  sortTransactionsNewestFirst,
   sumByType,
   transactionsForMonth,
 } from '@/lib/insights';
@@ -75,8 +77,10 @@ export default function FinancePage() {
   const { transactions, loading, error } = useTransactions(user?.uid);
   const { budget, loading: budgetLoading, error: budgetError } = useBudget(user?.uid, monthId);
 
-  const [typeFilter, setTypeFilter] = React.useState<'all' | TransactionType>('all');
-  const [query, setQuery] = React.useState('');
+  const [transactionMonthFilter, setTransactionMonthFilter] = React.useState('all');
+  const [transactionTypeFilter, setTransactionTypeFilter] = React.useState<'all' | TransactionType>('all');
+  const [transactionCategoryFilter, setTransactionCategoryFilter] = React.useState('all');
+  const [transactionQuery, setTransactionQuery] = React.useState('');
   const [amount, setAmount] = React.useState('');
   const [savingBudget, setSavingBudget] = React.useState(false);
   const [saveError, setSaveError] = React.useState<string | null>(null);
@@ -109,28 +113,85 @@ export default function FinancePage() {
     [transactions, monthId],
   );
 
-  const filtered = React.useMemo(() => {
-    const needle = query.trim().toLowerCase();
-    return monthTransactions.filter((tx) => {
-      if (typeFilter !== 'all' && tx.type !== typeFilter) return false;
-      if (!needle) return true;
-      return (
-        tx.category.toLowerCase().includes(needle) ||
-        tx.note.toLowerCase().includes(needle)
-      );
+  const transactionMonthIds = React.useMemo(
+    () =>
+      Array.from(new Set(transactions.map((tx) => monthIdFromDate(tx.date)))).sort((a, b) =>
+        b.localeCompare(a),
+      ),
+    [transactions],
+  );
+
+  const transactionMonthOptions = React.useMemo(() => {
+    const options = new Set<string>(transactionMonthIds);
+    options.add(monthId);
+    return Array.from(options).sort((a, b) => b.localeCompare(a));
+  }, [transactionMonthIds, monthId]);
+
+  const transactionFilterSource = React.useMemo(() => {
+    return transactions.filter((tx) => {
+      if (
+        transactionMonthFilter !== 'all' &&
+        monthIdFromDate(tx.date) !== transactionMonthFilter
+      ) {
+        return false;
+      }
+      if (transactionTypeFilter !== 'all' && tx.type !== transactionTypeFilter) return false;
+      return true;
     });
-  }, [monthTransactions, typeFilter, query]);
+  }, [transactions, transactionMonthFilter, transactionTypeFilter]);
+
+  const transactionCategoryOptions = React.useMemo(
+    () =>
+      Array.from(
+        new Set(
+          transactionFilterSource.map((tx) => {
+            const category = tx.category.trim();
+            return category.length > 0 ? category : 'Other';
+          }),
+        ),
+      ).sort((a, b) => a.localeCompare(b)),
+    [transactionFilterSource],
+  );
+
+  const filteredTransactions = React.useMemo(() => {
+    const needle = transactionQuery.trim().toLowerCase();
+    return sortTransactionsNewestFirst(
+      transactionFilterSource.filter((tx) => {
+        const category = tx.category.trim() || 'Other';
+        if (transactionCategoryFilter !== 'all' && category !== transactionCategoryFilter) {
+          return false;
+        }
+        if (!needle) return true;
+        return (
+          category.toLowerCase().includes(needle) ||
+          tx.note.toLowerCase().includes(needle)
+        );
+      }),
+    );
+  }, [transactionCategoryFilter, transactionFilterSource, transactionQuery]);
+
+  React.useEffect(() => {
+    if (transactionMonthFilter === 'all') return;
+    if (transactionMonthOptions.includes(transactionMonthFilter)) return;
+    setTransactionMonthFilter('all');
+  }, [transactionMonthFilter, transactionMonthOptions]);
+
+  React.useEffect(() => {
+    if (transactionCategoryFilter === 'all') return;
+    if (transactionCategoryOptions.includes(transactionCategoryFilter)) return;
+    setTransactionCategoryFilter('all');
+  }, [transactionCategoryFilter, transactionCategoryOptions]);
 
   React.useEffect(() => {
     setPage(0);
-  }, [monthId, typeFilter, query]);
+  }, [transactionCategoryFilter, transactionMonthFilter, transactionQuery, transactionTypeFilter]);
 
-  const pageCount = Math.max(1, Math.ceil(filtered.length / TRANSACTION_PAGE_SIZE));
+  const pageCount = Math.max(1, Math.ceil(filteredTransactions.length / TRANSACTION_PAGE_SIZE));
   const pageStart = page * TRANSACTION_PAGE_SIZE;
   const pageEnd = pageStart + TRANSACTION_PAGE_SIZE;
   const pagedTransactions = React.useMemo(
-    () => filtered.slice(pageStart, pageEnd),
-    [filtered, pageEnd, pageStart],
+    () => filteredTransactions.slice(pageStart, pageEnd),
+    [filteredTransactions, pageEnd, pageStart],
   );
 
   const income = React.useMemo(() => sumByType(monthTransactions, 'income'), [monthTransactions]);
@@ -212,7 +273,7 @@ export default function FinancePage() {
   function onExportCsv() {
     const rows: string[][] = [
       ['date', 'type', 'category', 'note', 'amount'],
-      ...filtered.map((transaction) => [
+      ...filteredTransactions.map((transaction) => [
         dateKeyLocal(transaction.date),
         transaction.type,
         transaction.category,
@@ -225,10 +286,33 @@ export default function FinancePage() {
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement('a');
     anchor.href = url;
-    anchor.download = `finance-${monthId}.csv`;
+    anchor.download =
+      transactionMonthFilter === 'all'
+        ? 'finance-transactions-all.csv'
+        : `finance-transactions-${transactionMonthFilter}.csv`;
     anchor.click();
     URL.revokeObjectURL(url);
   }
+
+  function onResetTransactionFilters() {
+    setTransactionMonthFilter('all');
+    setTransactionTypeFilter('all');
+    setTransactionCategoryFilter('all');
+    setTransactionQuery('');
+  }
+
+  const hasActiveTransactionFilters =
+    transactionMonthFilter !== 'all' ||
+    transactionTypeFilter !== 'all' ||
+    transactionCategoryFilter !== 'all' ||
+    transactionQuery.trim().length > 0;
+
+  const transactionSubtitle =
+    transactionMonthFilter === 'all'
+      ? `${filteredTransactions.length} transactions across ${transactionMonthIds.length} month${
+          transactionMonthIds.length === 1 ? '' : 's'
+        }`
+      : `${filteredTransactions.length} transactions for ${monthIdLabel(transactionMonthFilter)}`;
 
   return (
     <div className="flex flex-col gap-6">
@@ -247,32 +331,17 @@ export default function FinancePage() {
         </div>
 
         <section className="app-surface">
-          <div className="grid gap-3 px-4 py-4 sm:px-5 md:grid-cols-[180px_180px_180px_1fr]">
+          <div className="grid gap-3 px-4 py-4 sm:px-5 md:grid-cols-[220px_minmax(0,1fr)] md:items-end">
             <Input
-              label="Month"
+              label="Overview month"
               type="month"
               value={monthId}
               onChange={(e) => setMonthId(e.target.value)}
             />
-            <Select
-              label="Type"
-              value={typeFilter}
-              onChange={(e) => setTypeFilter(e.target.value as 'all' | TransactionType)}>
-              <option value="all">All</option>
-              <option value="income">Income</option>
-              <option value="expense">Expense</option>
-            </Select>
-            <div className="flex items-end">
-              <Button variant="secondary" onClick={onExportCsv} className="w-full">
-                Export CSV
-              </Button>
+            <div className="rounded-2xl border border-zinc-900 bg-zinc-950/50 px-4 py-3 text-sm text-zinc-400">
+              Summary cards, charts, and monthly budget follow this month. Transactions below can
+              be filtered independently by month, type, category, and search.
             </div>
-            <Input
-              label="Search"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Category or note…"
-            />
           </div>
         </section>
       </div>
@@ -438,19 +507,73 @@ export default function FinancePage() {
         <div className="app-panel-header">
           <div>
             <div className="text-sm font-semibold">Transactions</div>
-            <div className="mt-1 text-xs text-zinc-500">
-              {filtered.length} transactions for {monthId}
-            </div>
+            <div className="mt-1 text-xs text-zinc-500">{transactionSubtitle}</div>
           </div>
-          <div className="text-xs text-zinc-500">
-            {typeFilter === 'all' ? 'All types' : typeFilter}
+          <div className="text-right text-xs text-zinc-500">
+            <div>{transactionTypeFilter === 'all' ? 'All types' : transactionTypeFilter}</div>
+            <div className="mt-1">Newest first</div>
+          </div>
+        </div>
+
+        <div className="grid gap-3 border-t border-zinc-900 px-4 py-4 sm:px-5 lg:grid-cols-[180px_160px_180px_minmax(0,1fr)_auto] lg:items-end">
+          <Select
+            label="Month"
+            value={transactionMonthFilter}
+            onChange={(e) => setTransactionMonthFilter(e.target.value)}>
+            <option value="all">All months</option>
+            {transactionMonthOptions.map((option) => (
+              <option key={option} value={option}>
+                {monthIdLabel(option)}
+              </option>
+            ))}
+          </Select>
+          <Select
+            label="Type"
+            value={transactionTypeFilter}
+            onChange={(e) => setTransactionTypeFilter(e.target.value as 'all' | TransactionType)}>
+            <option value="all">All types</option>
+            <option value="income">Income</option>
+            <option value="expense">Expense</option>
+          </Select>
+          <Select
+            label="Category"
+            value={transactionCategoryFilter}
+            onChange={(e) => setTransactionCategoryFilter(e.target.value)}>
+            <option value="all">All categories</option>
+            {transactionCategoryOptions.map((category) => (
+              <option key={category} value={category}>
+                {category}
+              </option>
+            ))}
+          </Select>
+          <Input
+            label="Search"
+            value={transactionQuery}
+            onChange={(e) => setTransactionQuery(e.target.value)}
+            placeholder="Category or note…"
+          />
+          <div className="flex flex-wrap items-end gap-2">
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={onResetTransactionFilters}
+              disabled={!hasActiveTransactionFilters}>
+              Reset filters
+            </Button>
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={onExportCsv}
+              disabled={filteredTransactions.length === 0}>
+              Export CSV
+            </Button>
           </div>
         </div>
 
         <div className="md:hidden">
           {loading ? (
             <div className="px-5 py-4 text-sm text-zinc-400">Loading…</div>
-          ) : filtered.length === 0 ? (
+          ) : filteredTransactions.length === 0 ? (
             <div className="px-5 py-4 text-sm text-zinc-400">No transactions yet.</div>
           ) : (
             <div className="divide-y divide-zinc-800">
@@ -512,7 +635,7 @@ export default function FinancePage() {
                     Loading…
                   </td>
                 </tr>
-              ) : filtered.length === 0 ? (
+              ) : filteredTransactions.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="px-5 py-4 text-sm text-zinc-400">
                     No transactions yet.
@@ -562,7 +685,7 @@ export default function FinancePage() {
             </tbody>
           </table>
         </div>
-        {filtered.length > 0 ? (
+        {filteredTransactions.length > 0 ? (
           <div className="flex flex-wrap items-center justify-between gap-3 border-t border-zinc-900 px-5 py-4 text-xs text-zinc-500">
             <div>
               Page {page + 1} of {pageCount}
@@ -619,3 +742,4 @@ export default function FinancePage() {
     </div>
   );
 }
+

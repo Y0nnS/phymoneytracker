@@ -15,14 +15,20 @@ import {
   where,
 } from 'firebase/firestore';
 import { firestore } from './client';
+import { sortTransactionsNewestFirst } from '@/lib/insights';
 import type { Transaction, TransactionCreateInput } from '@/lib/types';
+
+function optionalDateFromValue(value: unknown) {
+  if (value instanceof Timestamp) return value.toDate();
+  if (value instanceof Date) return value;
+  return undefined;
+}
 
 function mapTransaction(
   id: string,
   data: Record<string, unknown>,
 ): Transaction {
-  const dateValue = data.date as Timestamp | undefined;
-  const date = dateValue ? dateValue.toDate() : new Date();
+  const date = optionalDateFromValue(data.date) ?? new Date();
 
   return {
     id,
@@ -31,6 +37,8 @@ function mapTransaction(
     category: typeof data.category === 'string' ? data.category : 'Other',
     note: typeof data.note === 'string' ? data.note : '',
     date,
+    createdAt: optionalDateFromValue(data.createdAt),
+    updatedAt: optionalDateFromValue(data.updatedAt),
   };
 }
 
@@ -48,7 +56,7 @@ export function subscribeTransactions(
   return onSnapshot(
     q,
     (snap) => {
-      onChange(snap.docs.map((d) => mapTransaction(d.id, d.data())));
+      onChange(sortTransactionsNewestFirst(snap.docs.map((d) => mapTransaction(d.id, d.data()))));
     },
     (err) => onError?.(err),
   );
@@ -82,7 +90,7 @@ export async function fetchTransactions(
 
   const q = query(collection(firestore, `users/${uid}/transactions`), ...constraints);
   const snap = await getDocs(q);
-  return snap.docs.map((d) => mapTransaction(d.id, d.data()));
+  return sortTransactionsNewestFirst(snap.docs.map((d) => mapTransaction(d.id, d.data())));
 }
 
 export async function addTransaction(uid: string, input: TransactionCreateInput) {
