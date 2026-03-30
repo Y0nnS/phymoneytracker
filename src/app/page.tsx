@@ -64,7 +64,7 @@ export default function HomePage() {
               <div className="rounded-2xl border border-zinc-800 bg-zinc-950/30 p-4 shadow-sm shadow-black/30 ring-1 ring-white/5 sm:p-5">
                 <div className="text-[13px] font-semibold text-zinc-100 sm:text-sm">Finance</div>
                 <div className="mt-2 text-[12px] text-zinc-300 sm:text-sm">
-                  Income, expense, budget, and trends in one module.
+                  Income, expense, four account buckets, and trends in one module.
                 </div>
               </div>
             </section>
@@ -100,3 +100,4 @@ export default function HomePage() {
     </main>
   );
 }
+

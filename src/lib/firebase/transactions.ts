@@ -14,6 +14,8 @@ import {
   updateDoc,
   where,
 } from 'firebase/firestore';
+import { normalizeOptionalFinanceAccount } from '@/lib/financeAccounts';
+
 import { firestore } from './client';
 import { sortTransactionsNewestFirst } from '@/lib/insights';
 import type { Transaction, TransactionCreateInput } from '@/lib/types';
@@ -30,9 +32,16 @@ function mapTransaction(
 ): Transaction {
   const date = optionalDateFromValue(data.date) ?? new Date();
 
+  const type =
+    data.type === 'income' || data.type === 'transfer'
+      ? data.type
+      : 'expense';
+
   return {
     id,
-    type: data.type === 'income' ? 'income' : 'expense',
+    type,
+    account: normalizeOptionalFinanceAccount(data.account),
+    toAccount: normalizeOptionalFinanceAccount(data.toAccount),
     amount: typeof data.amount === 'number' ? data.amount : Number(data.amount),
     category: typeof data.category === 'string' ? data.category : 'Other',
     note: typeof data.note === 'string' ? data.note : '',
@@ -97,6 +106,8 @@ export async function addTransaction(uid: string, input: TransactionCreateInput)
   const colRef = collection(firestore, `users/${uid}/transactions`);
   return addDoc(colRef, {
     type: input.type,
+    account: input.account ?? null,
+    toAccount: input.toAccount ?? null,
     amount: input.amount,
     category: input.category,
     note: input.note ?? '',
@@ -117,6 +128,8 @@ export async function updateTransaction(
   const ref = doc(firestore, `users/${uid}/transactions/${id}`);
   return updateDoc(ref, {
     type: input.type,
+    account: input.account ?? null,
+    toAccount: input.toAccount ?? null,
     amount: input.amount,
     category: input.category,
     note: input.note ?? '',
@@ -124,3 +137,5 @@ export async function updateTransaction(
     updatedAt: serverTimestamp(),
   });
 }
+
+

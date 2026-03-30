@@ -11,7 +11,7 @@ export function Button({
 }: {
   children: React.ReactNode;
   className?: string;
-  variant?: 'primary' | 'secondary' | 'ghost' | 'danger';
+  variant?: 'primary' | 'secondary' | 'ghost' | 'danger' | 'success';
   size?: 'sm' | 'md';
   type?: 'button' | 'submit' | 'reset';
   disabled?: boolean;
@@ -30,6 +30,8 @@ export function Button({
       'border border-zinc-800 bg-zinc-900 text-zinc-100 shadow-sm shadow-black/30 hover:bg-zinc-800 active:shadow-none',
     ghost: 'text-zinc-100 hover:bg-zinc-900',
     danger: 'bg-red-600 text-white shadow-sm shadow-black/40 hover:bg-red-500 active:shadow-none',
+    success:
+      'bg-emerald-600 text-white shadow-sm shadow-black/40 hover:bg-emerald-500 active:shadow-none',
   };
 
   return (

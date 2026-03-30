@@ -1,8 +1,12 @@
-export type TransactionType = 'income' | 'expense';
+export type TransactionType = 'income' | 'expense' | 'transfer';
+
+export type FinanceAccount = 'cash' | 'bank' | 'ewallet' | 'personal';
 
 export type Transaction = {
   id: string;
   type: TransactionType;
+  account?: FinanceAccount;
+  toAccount?: FinanceAccount;
   amount: number;
   category: string;
   note: string;
@@ -13,7 +17,7 @@ export type Transaction = {
 
 export type TransactionCreateInput = Pick<
   Transaction,
-  'type' | 'amount' | 'category' | 'note' | 'date'
+  'type' | 'account' | 'toAccount' | 'amount' | 'category' | 'note' | 'date'
 >;
 
 export type UserProfile = {
@@ -25,7 +29,7 @@ export type UserProfile = {
 };
 
 export type Budget = {
-  month: string; 
+  month: string;
   amount: number;
   updatedAt?: Date;
 };
@@ -115,3 +119,4 @@ export type FocusSession = {
 };
 
 export type FocusSessionInput = Omit<FocusSession, 'id' | 'createdAt'>;
+

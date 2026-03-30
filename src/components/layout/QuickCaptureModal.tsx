@@ -23,7 +23,7 @@ const ACTIONS = [
   {
     href: '/app/finance',
     title: 'Open finance',
-    description: 'Review monthly cashflow, budget, and history.',
+    description: 'Review bucket balances, monthly cashflow, and history.',
   },
 ];
 
@@ -74,3 +74,4 @@ export function QuickCaptureModal({
     </Modal>
   );
 }
+

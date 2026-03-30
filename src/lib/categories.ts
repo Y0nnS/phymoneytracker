@@ -12,10 +12,12 @@ export const EXPENSE_CATEGORIES = [
 ];
 
 export const INCOME_CATEGORIES = ['Salary', 'Freelance', 'Gift', 'Other'];
+export const TRANSFER_CATEGORIES = ['Transfer'];
 
 const STORAGE_KEYS: Record<TransactionType, string> = {
   expense: 'moneytracker:categories:expense',
   income: 'moneytracker:categories:income',
+  transfer: 'moneytracker:categories:transfer',
 };
 
 function normalizeCategories(input: string[]) {
@@ -47,7 +49,13 @@ export function saveCustomCategories(type: TransactionType, categories: string[]
 }
 
 export function categoriesForType(type: TransactionType) {
-  const base = type === 'income' ? INCOME_CATEGORIES : EXPENSE_CATEGORIES;
-  const custom = loadCustomCategories(type);
-  return normalizeCategories([...custom, ...base]);
+  if (type === 'income') {
+    return normalizeCategories([...loadCustomCategories(type), ...INCOME_CATEGORIES]);
+  }
+
+  if (type === 'expense') {
+    return normalizeCategories([...loadCustomCategories(type), ...EXPENSE_CATEGORIES]);
+  }
+
+  return TRANSFER_CATEGORIES;
 }

@@ -1,5 +1,6 @@
+import { FINANCE_ACCOUNT_OPTIONS } from '@/lib/financeAccounts';
 import { addDays, formatDayLabel, monthIdFromDate } from '@/lib/date';
-import type { Transaction, TransactionType } from '@/lib/types';
+import type { FinanceAccount, Transaction, TransactionType } from '@/lib/types';
 
 function pad2(value: number) {
   return String(value).padStart(2, '0');
@@ -59,6 +60,34 @@ export function sumByType(transactions: Transaction[], type: TransactionType) {
     .reduce((sum, t) => sum + t.amount, 0);
 }
 
+export function transactionTouchesAccount(transaction: Transaction, account: FinanceAccount) {
+  if (transaction.type === 'transfer') {
+    return transaction.account === account || transaction.toAccount === account;
+  }
+
+  return transaction.account === account;
+}
+
+export function balanceByAccount(transactions: Transaction[], account: FinanceAccount) {
+  return transactions.reduce((sum, transaction) => {
+    if (transaction.type === 'transfer') {
+      if (transaction.account === account) sum -= transaction.amount;
+      if (transaction.toAccount === account) sum += transaction.amount;
+      return sum;
+    }
+
+    if (transaction.account !== account) return sum;
+    return transaction.type === 'income' ? sum + transaction.amount : sum - transaction.amount;
+  }, 0);
+}
+
+export function accountBalances(transactions: Transaction[]) {
+  return FINANCE_ACCOUNT_OPTIONS.map((option) => ({
+    account: option.value,
+    balance: balanceByAccount(transactions, option.value),
+  }));
+}
+
 export function buildDailyCumulativeSeries(
   monthTransactions: Transaction[],
   monthId: string,
@@ -68,6 +97,7 @@ export function buildDailyCumulativeSeries(
   const expenseDaily = Array.from({ length: days }, () => 0);
 
   for (const tx of monthTransactions) {
+    if (tx.type === 'transfer') continue;
     const dayIndex = tx.date.getDate() - 1;
     if (dayIndex < 0 || dayIndex >= days) continue;
     if (tx.type === 'income') incomeDaily[dayIndex] += tx.amount;
@@ -184,6 +214,7 @@ export function lastNMonthIds(fromMonthId: string, count: number) {
 export function monthlyTotals(transactions: Transaction[], monthIds: string[]) {
   const totals = new Map<string, { income: number; expense: number }>();
   for (const tx of transactions) {
+    if (tx.type === 'transfer') continue;
     const monthId = monthIdFromDate(tx.date);
     const entry = totals.get(monthId) ?? { income: 0, expense: 0 };
     if (tx.type === 'income') entry.income += tx.amount;

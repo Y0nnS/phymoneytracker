@@ -36,7 +36,7 @@ export function PublicDashboardPreview() {
           <div className="rounded-2xl border border-zinc-800 bg-zinc-950/40 p-4">
             <div className="text-xs font-semibold text-zinc-500">Finance Month</div>
             <div className="mt-2 text-2xl font-semibold text-emerald-200">+Rp1.8jt</div>
-            <div className="mt-1 text-sm text-zinc-400">Net cashflow and budget usage</div>
+            <div className="mt-1 text-sm text-zinc-400">Net cashflow across four money buckets</div>
           </div>
         </div>
       </Card>
@@ -59,7 +59,7 @@ export function PublicDashboardPreview() {
           <div className="rounded-2xl border border-zinc-800 bg-zinc-950/40 p-4">
             <div className="text-sm font-semibold text-zinc-100">Finance</div>
             <div className="mt-1 text-sm text-zinc-400">
-              Income, expense, budget, and money tracking in one system.
+              Income, expense, four account buckets, and money tracking in one system.
             </div>
           </div>
         </div>
@@ -67,3 +67,4 @@ export function PublicDashboardPreview() {
     </div>
   );
 }
+
