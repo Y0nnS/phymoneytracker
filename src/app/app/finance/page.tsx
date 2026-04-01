@@ -252,7 +252,6 @@ export default function FinancePage() {
   const net = monthSummary.closingBalance;
   const monthLabel = monthIdLabel(monthId);
   const openingBalance = monthSummary.openingBalance;
-  const recordedIncome = monthSummary.income;
   const monthChange = monthSummary.monthChange;
 
   React.useEffect(() => {
@@ -786,3 +785,4 @@ export default function FinancePage() {
     </div>
   );
 }
+
