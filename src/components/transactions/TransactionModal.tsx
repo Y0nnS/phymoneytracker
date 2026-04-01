@@ -3,13 +3,8 @@
 import React from 'react';
 import { addTransaction, updateTransaction } from '@/lib/firebase/transactions';
 import { categoriesForType } from '@/lib/categories';
-import {
-  DEFAULT_FINANCE_ACCOUNT,
-  FINANCE_ACCOUNT_OPTIONS,
-  normalizeFinanceAccount,
-} from '@/lib/financeAccounts';
 import { readLocalStorageItem, writeLocalStorageItem } from '@/lib/storage';
-import type { FinanceAccount, Transaction, TransactionType } from '@/lib/types';
+import type { Transaction, TransactionType } from '@/lib/types';
 import { Alert } from '@/components/ui/Alert';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -17,6 +12,8 @@ import { Modal } from '@/components/ui/Modal';
 import { Select } from '@/components/ui/Select';
 import { Textarea } from '@/components/ui/Textarea';
 import { useToast } from '@/components/ui/Toast';
+
+type EntryTransactionType = Exclude<TransactionType, 'transfer'>;
 
 function todayISO() {
   const d = new Date();
@@ -33,11 +30,8 @@ function dateToISO(date: Date) {
   return `${yyyy}-${mm}-${dd}`;
 }
 
-function defaultTransferTarget(fromAccount: FinanceAccount) {
-  return (
-    FINANCE_ACCOUNT_OPTIONS.find((option) => option.value !== fromAccount)?.value ??
-    DEFAULT_FINANCE_ACCOUNT
-  );
+function normalizeEntryType(value?: TransactionType): EntryTransactionType {
+  return value === 'income' ? 'income' : 'expense';
 }
 
 export function TransactionModal({
@@ -48,7 +42,6 @@ export function TransactionModal({
   mode = 'create',
   initialTransaction,
   onCreated,
-  presetAccount,
 }: {
   uid: string;
   open: boolean;
@@ -57,16 +50,11 @@ export function TransactionModal({
   mode?: 'create' | 'edit' | 'duplicate';
   initialTransaction?: Transaction | null;
   onCreated?: () => void;
-  presetAccount?: FinanceAccount;
 }) {
   const toast = useToast();
-  const [type, setType] = React.useState<TransactionType>(defaultType);
-  const [account, setAccount] = React.useState<FinanceAccount>(DEFAULT_FINANCE_ACCOUNT);
-  const [toAccount, setToAccount] = React.useState<FinanceAccount>(
-    defaultTransferTarget(DEFAULT_FINANCE_ACCOUNT),
-  );
+  const [type, setType] = React.useState<EntryTransactionType>(normalizeEntryType(defaultType));
   const [amount, setAmount] = React.useState('');
-  const [category, setCategory] = React.useState(categoriesForType(defaultType)[0]);
+  const [category, setCategory] = React.useState(categoriesForType(normalizeEntryType(defaultType))[0]);
   const [date, setDate] = React.useState(todayISO());
   const [note, setNote] = React.useState('');
   const [submitting, setSubmitting] = React.useState(false);
@@ -75,34 +63,17 @@ export function TransactionModal({
   React.useEffect(() => {
     if (!open) return;
 
-    const seedType = initialTransaction?.type ?? defaultType;
+    const seedType = normalizeEntryType(initialTransaction?.type ?? defaultType);
     const seedCategories = categoriesForType(seedType);
-    const lastCategory =
-      seedType === 'transfer'
-        ? seedCategories[0]
-        : readLocalStorageItem(`moneytracker:lastCategory:${seedType}`);
-    const lastAccount = normalizeFinanceAccount(
-      readLocalStorageItem('moneytracker:lastAccount'),
-      DEFAULT_FINANCE_ACCOUNT,
-    );
-    const seedAccount = initialTransaction?.account ?? presetAccount ?? lastAccount;
-    const lastToAccount = normalizeFinanceAccount(
-      readLocalStorageItem('moneytracker:lastTransferToAccount'),
-      defaultTransferTarget(seedAccount),
-    );
-    const seedToAccount = initialTransaction?.toAccount ?? lastToAccount;
-    const normalizedToAccount =
-      seedToAccount === seedAccount ? defaultTransferTarget(seedAccount) : seedToAccount;
+    const lastCategory = readLocalStorageItem(`moneytracker:lastCategory:${seedType}`);
     const seedCategory =
-      seedType === 'transfer'
-        ? seedCategories[0]
+      initialTransaction && initialTransaction.type !== 'transfer'
+        ? initialTransaction.category
         : !initialTransaction && lastCategory && seedCategories.includes(lastCategory)
           ? lastCategory
-          : initialTransaction?.category ?? seedCategories[0];
+          : seedCategories[0];
 
     setType(seedType);
-    setAccount(seedAccount);
-    setToAccount(normalizedToAccount);
     setAmount(initialTransaction ? String(initialTransaction.amount) : '');
     setCategory(seedCategory);
     setDate(
@@ -114,21 +85,11 @@ export function TransactionModal({
     );
     setNote(initialTransaction ? initialTransaction.note : '');
     setError(null);
-  }, [open, defaultType, initialTransaction, mode, presetAccount]);
+  }, [open, defaultType, initialTransaction, mode]);
 
   const isEditing = mode === 'edit' && initialTransaction != null;
   const isDuplicate = mode === 'duplicate' && initialTransaction != null;
-  const title = isEditing
-    ? type === 'transfer'
-      ? 'Edit transfer'
-      : 'Edit transaction'
-    : isDuplicate
-      ? type === 'transfer'
-        ? 'Duplicate transfer'
-        : 'Duplicate transaction'
-      : type === 'transfer'
-        ? 'Add transfer'
-        : 'Add transaction';
+  const title = isEditing ? 'Edit transaction' : isDuplicate ? 'Duplicate transaction' : 'Add transaction';
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -137,11 +98,6 @@ export function TransactionModal({
     const numericAmount = Number(amount);
     if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
       setError('Amount must be a number > 0.');
-      return;
-    }
-
-    if (type === 'transfer' && account === toAccount) {
-      setError('Source and destination accounts must be different.');
       return;
     }
 
@@ -155,10 +111,8 @@ export function TransactionModal({
     try {
       const payload = {
         type,
-        account,
-        toAccount: type === 'transfer' ? toAccount : undefined,
         amount: Math.round(numericAmount),
-        category: type === 'transfer' ? 'Transfer' : category,
+        category,
         note: note.trim(),
         date: txDate,
       };
@@ -166,103 +120,45 @@ export function TransactionModal({
       if (isEditing) {
         if (!initialTransaction) throw new Error('Missing transaction to edit.');
         await updateTransaction(uid, initialTransaction.id, payload);
-        toast.success(type === 'transfer' ? 'Transfer updated.' : 'Transaction updated.');
+        toast.success('Transaction updated.');
       } else {
         await addTransaction(uid, payload);
-        toast.success(
-          isDuplicate
-            ? type === 'transfer'
-              ? 'Transfer duplicated.'
-              : 'Transaction duplicated.'
-            : type === 'transfer'
-              ? 'Transfer saved.'
-              : 'Transaction saved.',
-        );
+        toast.success(isDuplicate ? 'Transaction duplicated.' : 'Transaction saved.');
       }
 
       writeLocalStorageItem('moneytracker:lastType', type);
-      writeLocalStorageItem('moneytracker:lastAccount', account);
-      if (type === 'transfer') {
-        writeLocalStorageItem('moneytracker:lastTransferToAccount', toAccount);
-      } else {
-        writeLocalStorageItem(`moneytracker:lastCategory:${type}`, category);
-      }
+      writeLocalStorageItem(`moneytracker:lastCategory:${type}`, category);
 
       onCreated?.();
       onClose();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save transaction.');
-      toast.danger(
-        type === 'transfer' ? 'Failed to save transfer.' : 'Failed to save transaction.',
-      );
+      toast.danger('Failed to save transaction.');
     } finally {
       setSubmitting(false);
     }
   }
-
-  const transferTargetOptions = React.useMemo(
-    () => FINANCE_ACCOUNT_OPTIONS.filter((option) => option.value !== account),
-    [account],
-  );
 
   return (
     <Modal open={open} title={title} onClose={onClose}>
       <form onSubmit={onSubmit} className="flex flex-col gap-4">
         {error ? <Alert variant="danger">{error}</Alert> : null}
 
-        <div className={`grid gap-4 ${type === 'transfer' ? 'md:grid-cols-4' : 'md:grid-cols-3'}`}>
+        <div className="grid gap-4 md:grid-cols-2">
           <Select
             label="Type"
             value={type}
             onChange={(e) => {
-              const nextType = e.target.value as TransactionType;
-              setType(nextType);
-              if (nextType === 'transfer') {
-                setCategory('Transfer');
-                setToAccount((current) =>
-                  current === account ? defaultTransferTarget(account) : current,
-                );
-                return;
-              }
-
+              const nextType = normalizeEntryType(e.target.value as TransactionType);
               const list = categoriesForType(nextType);
               const last = readLocalStorageItem(`moneytracker:lastCategory:${nextType}`);
+
+              setType(nextType);
               setCategory(last && list.includes(last) ? last : list[0]);
             }}>
             <option value="expense">Expense</option>
             <option value="income">Income</option>
-            <option value="transfer">Transfer</option>
           </Select>
-
-          <Select
-            label={type === 'transfer' ? 'From account' : 'Account'}
-            value={account}
-            onChange={(e) => {
-              const nextAccount = e.target.value as FinanceAccount;
-              setAccount(nextAccount);
-              if (type === 'transfer' && nextAccount === toAccount) {
-                setToAccount(defaultTransferTarget(nextAccount));
-              }
-            }}>
-            {FINANCE_ACCOUNT_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </Select>
-
-          {type === 'transfer' ? (
-            <Select
-              label="To account"
-              value={toAccount}
-              onChange={(e) => setToAccount(e.target.value as FinanceAccount)}>
-              {transferTargetOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </Select>
-          ) : null}
 
           <Input
             label="Amount (IDR)"
@@ -277,7 +173,18 @@ export function TransactionModal({
           />
         </div>
 
-        {type === 'transfer' ? (
+        <div className="grid gap-4 md:grid-cols-2">
+          <Select
+            label="Category"
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}>
+            {categoriesForType(type).map((option) => (
+              <option key={option} value={option}>
+                {option}
+              </option>
+            ))}
+          </Select>
+
           <Input
             label="Date"
             type="date"
@@ -285,35 +192,13 @@ export function TransactionModal({
             onChange={(e) => setDate(e.target.value)}
             required
           />
-        ) : (
-          <div className="grid gap-4 md:grid-cols-2">
-            <Select
-              label="Category"
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}>
-              {categoriesForType(type).map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
-              ))}
-            </Select>
-            <Input
-              label="Date"
-              type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              required
-            />
-          </div>
-        )}
+        </div>
 
         <Textarea
           label="Note (optional)"
           value={note}
           onChange={(e) => setNote(e.target.value)}
-          placeholder={
-            type === 'transfer' ? 'Example: move from bank to pocket' : 'Example: lunch'
-          }
+          placeholder="Example: lunch"
         />
 
         <div className="flex items-center justify-end gap-3">

@@ -4,7 +4,7 @@ import React from 'react';
 import { Bar } from 'react-chartjs-2';
 import type { TooltipItem } from 'chart.js';
 import type { Transaction } from '@/lib/types';
-import { lastNMonthIds, monthIdLabel, monthlyTotals } from '@/lib/insights';
+import { lastNMonthIds, monthIdLabel, monthlyFinanceSnapshots } from '@/lib/insights';
 import { formatIDR, formatIDRCompact } from '@/lib/money';
 import { ensureChartJs } from './ensureChartJs';
 import { CHART_COLORS } from './theme';
@@ -22,12 +22,12 @@ export function MonthlyNetChart({
 }) {
   const monthIds = React.useMemo(() => lastNMonthIds(monthId, rangeMonths), [monthId, rangeMonths]);
   const totals = React.useMemo(
-    () => monthlyTotals(transactions, monthIds),
+    () => monthlyFinanceSnapshots(transactions, monthIds),
     [transactions, monthIds],
   );
 
   const labels = totals.map((t) => monthIdLabel(t.monthId));
-  const values = totals.map((t) => t.net);
+  const values = totals.map((t) => t.closingBalance);
   const colors = values.map((v) => (v >= 0 ? CHART_COLORS.net : CHART_COLORS.expense));
 
   const data = React.useMemo(
@@ -35,7 +35,7 @@ export function MonthlyNetChart({
       labels,
       datasets: [
         {
-          label: 'Net',
+          label: 'Closing balance',
           data: values,
           backgroundColor: colors,
           borderRadius: 8,
@@ -60,7 +60,7 @@ export function MonthlyNetChart({
           bodyColor: CHART_COLORS.text,
           callbacks: {
             label: (ctx: TooltipItem<'bar'>) =>
-              `Net: ${formatIDR(
+              `Closing balance: ${formatIDR(
                 typeof ctx.parsed.y === 'number' ? ctx.parsed.y : 0,
               )}`,
           },

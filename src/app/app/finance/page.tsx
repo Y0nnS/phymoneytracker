@@ -13,30 +13,21 @@ import { Alert } from '@/components/ui/Alert';
 import { Button } from '@/components/ui/Button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Input } from '@/components/ui/Input';
-
 import { Select } from '@/components/ui/Select';
 import { useToast } from '@/components/ui/Toast';
-
 import { useTransactions } from '@/hooks/useTransactions';
 import { dateToISO, formatDateShort, monthIdFromDate } from '@/lib/date';
-import {
-  FINANCE_ACCOUNT_OPTIONS,
-  financeAccountLabel,
-} from '@/lib/financeAccounts';
-
 import { deleteTransaction } from '@/lib/firebase/transactions';
 import {
-  accountBalances as summarizeAccountBalances,
-  balanceByAccount,
   dateKeyLocal,
+  isTrackedTransaction,
   monthIdLabel,
+  monthlyFinanceSnapshot,
   sortTransactionsNewestFirst,
-  sumByType,
-  transactionTouchesAccount,
   transactionsForMonth,
 } from '@/lib/insights';
 import { formatIDR, formatIDRCompact } from '@/lib/money';
-import type { FinanceAccount, Transaction, TransactionType } from '@/lib/types';
+import type { Transaction, TransactionType } from '@/lib/types';
 
 function csvEscape(value: string) {
   const safe = value.replaceAll('"', '""');
@@ -45,17 +36,6 @@ function csvEscape(value: string) {
 
 function formatSignedCompact(amount: number) {
   return amount > 0 ? `+${formatIDRCompact(amount)}` : formatIDRCompact(amount);
-}
-
-function transactionSingleAccountLabel(account?: FinanceAccount) {
-  return account ? financeAccountLabel(account) : 'No account';
-}
-
-function transactionAccountSummary(transaction: Transaction) {
-  if (transaction.type !== 'transfer') return transactionSingleAccountLabel(transaction.account);
-  return `${transactionSingleAccountLabel(transaction.account)} -> ${transactionSingleAccountLabel(
-    transaction.toAccount,
-  )}`;
 }
 
 function transactionTypeBadgeClass(type: TransactionType) {
@@ -106,36 +86,9 @@ const CASHFLOW_RANGES = [
 ] as const;
 
 type CashflowRange = (typeof CASHFLOW_RANGES)[number]['id'];
+type TransactionListType = Exclude<TransactionType, 'transfer'>;
 
 const TRANSACTION_PAGE_SIZE = 10;
-
-function financeAccountSurfaceClass(account: FinanceAccount) {
-  if (account === 'cash') {
-    return 'border-amber-400/10 bg-[linear-gradient(180deg,rgba(18,18,20,0.98),rgba(8,8,9,0.98))]';
-  }
-  if (account === 'bank') {
-    return 'border-sky-400/10 bg-[linear-gradient(180deg,rgba(18,18,20,0.98),rgba(8,8,9,0.98))]';
-  }
-  if (account === 'ewallet') {
-    return 'border-emerald-400/10 bg-[linear-gradient(180deg,rgba(18,18,20,0.98),rgba(8,8,9,0.98))]';
-  }
-  return 'border-violet-400/10 bg-[linear-gradient(180deg,rgba(18,18,20,0.98),rgba(8,8,9,0.98))]';
-}
-
-function financeAccountBadgeClass(account: FinanceAccount) {
-  if (account === 'cash') return 'border-amber-400/15 bg-amber-400/5 text-amber-100';
-  if (account === 'bank') return 'border-sky-400/15 bg-sky-400/5 text-sky-100';
-  if (account === 'ewallet') return 'border-emerald-400/15 bg-emerald-400/5 text-emerald-100';
-  return 'border-violet-400/15 bg-violet-400/5 text-violet-100';
-}
-
-function financeAccountToneClass(account: FinanceAccount, balance: number) {
-  if (balance < 0) return 'text-red-200';
-  if (account === 'cash') return 'text-amber-100';
-  if (account === 'bank') return 'text-sky-100';
-  if (account === 'ewallet') return 'text-emerald-100';
-  return 'text-violet-100';
-}
 
 function FinanceCell({
   title,
@@ -169,9 +122,13 @@ export default function FinancePage() {
   const [monthId, setMonthId] = React.useState(() => monthIdFromDate(new Date()));
   const { transactions, loading, error } = useTransactions(user?.uid);
 
+  const trackedTransactions = React.useMemo(
+    () => sortTransactionsNewestFirst(transactions.filter((transaction) => isTrackedTransaction(transaction))),
+    [transactions],
+  );
+
   const [transactionMonthFilter, setTransactionMonthFilter] = React.useState('all');
-  const [transactionTypeFilter, setTransactionTypeFilter] = React.useState<'all' | TransactionType>('all');
-  const [transactionAccountFilter, setTransactionAccountFilter] = React.useState<'all' | FinanceAccount>('all');
+  const [transactionTypeFilter, setTransactionTypeFilter] = React.useState<'all' | TransactionListType>('all');
   const [transactionCategoryFilter, setTransactionCategoryFilter] = React.useState('all');
   const [transactionQuery, setTransactionQuery] = React.useState('');
   const [cashflowRange, setCashflowRange] = React.useState<CashflowRange>('1m');
@@ -179,7 +136,6 @@ export default function FinancePage() {
   const [modalOpen, setModalOpen] = React.useState(false);
   const [modalMode, setModalMode] = React.useState<'create' | 'edit' | 'duplicate'>('create');
   const [defaultType, setDefaultType] = React.useState<TransactionType>('expense');
-  const [modalPresetAccount, setModalPresetAccount] = React.useState<FinanceAccount | undefined>(undefined);
   const [editingTransaction, setEditingTransaction] = React.useState<Transaction | null>(null);
   const [pendingDelete, setPendingDelete] = React.useState<Transaction | null>(null);
   const [deleting, setDeleting] = React.useState(false);
@@ -196,27 +152,25 @@ export default function FinancePage() {
       setEditingTransaction(null);
       setModalMode('create');
       setDefaultType('expense');
-      setModalPresetAccount(undefined);
       setModalOpen(true);
     }
   }, [searchParams]);
 
-
   const monthTransactions = React.useMemo(
-    () => transactionsForMonth(transactions, monthId),
-    [transactions, monthId],
+    () => transactionsForMonth(trackedTransactions, monthId),
+    [trackedTransactions, monthId],
   );
-  const balancesByAccount = React.useMemo(
-    () => summarizeAccountBalances(transactions),
-    [transactions],
+  const monthSummary = React.useMemo(
+    () => monthlyFinanceSnapshot(trackedTransactions, monthId),
+    [trackedTransactions, monthId],
   );
 
   const transactionMonthIds = React.useMemo(
     () =>
-      Array.from(new Set(transactions.map((tx) => monthIdFromDate(tx.date)))).sort((a, b) =>
+      Array.from(new Set(trackedTransactions.map((tx) => monthIdFromDate(tx.date)))).sort((a, b) =>
         b.localeCompare(a),
       ),
-    [transactions],
+    [trackedTransactions],
   );
 
   const transactionMonthOptions = React.useMemo(() => {
@@ -226,7 +180,7 @@ export default function FinancePage() {
   }, [transactionMonthIds, monthId]);
 
   const transactionFilterSource = React.useMemo(() => {
-    return transactions.filter((tx) => {
+    return trackedTransactions.filter((tx) => {
       if (
         transactionMonthFilter !== 'all' &&
         monthIdFromDate(tx.date) !== transactionMonthFilter
@@ -234,12 +188,9 @@ export default function FinancePage() {
         return false;
       }
       if (transactionTypeFilter !== 'all' && tx.type !== transactionTypeFilter) return false;
-      if (transactionAccountFilter !== 'all' && !transactionTouchesAccount(tx, transactionAccountFilter)) {
-        return false;
-      }
       return true;
     });
-  }, [transactionAccountFilter, transactionMonthFilter, transactionTypeFilter, transactions]);
+  }, [trackedTransactions, transactionMonthFilter, transactionTypeFilter]);
 
   const transactionCategoryOptions = React.useMemo(
     () =>
@@ -265,7 +216,7 @@ export default function FinancePage() {
         if (!needle) return true;
         return (
           category.toLowerCase().includes(needle) ||
-          transactionAccountSummary(tx).toLowerCase().includes(needle) ||
+          tx.type.toLowerCase().includes(needle) ||
           tx.note.toLowerCase().includes(needle)
         );
       }),
@@ -286,13 +237,7 @@ export default function FinancePage() {
 
   React.useEffect(() => {
     setPage(0);
-  }, [
-    transactionAccountFilter,
-    transactionCategoryFilter,
-    transactionMonthFilter,
-    transactionQuery,
-    transactionTypeFilter,
-  ]);
+  }, [transactionCategoryFilter, transactionMonthFilter, transactionQuery, transactionTypeFilter]);
 
   const pageCount = Math.max(1, Math.ceil(filteredTransactions.length / TRANSACTION_PAGE_SIZE));
   const pageStart = page * TRANSACTION_PAGE_SIZE;
@@ -302,14 +247,13 @@ export default function FinancePage() {
     [filteredTransactions, pageEnd, pageStart],
   );
 
-  const income = React.useMemo(() => sumByType(monthTransactions, 'income'), [monthTransactions]);
-  const expense = React.useMemo(() => sumByType(monthTransactions, 'expense'), [monthTransactions]);
-  const net = React.useMemo(() => balancesByAccount.reduce((sum, item) => sum + item.balance, 0), [balancesByAccount]);
+  const income = monthSummary.availableIncome;
+  const expense = monthSummary.expense;
+  const net = monthSummary.closingBalance;
   const monthLabel = monthIdLabel(monthId);
-  const expenseRangeAccountLabel =
-    transactionAccountFilter === 'all'
-      ? 'All accounts'
-      : financeAccountLabel(transactionAccountFilter);
+  const openingBalance = monthSummary.openingBalance;
+  const recordedIncome = monthSummary.income;
+  const monthChange = monthSummary.monthChange;
 
   React.useEffect(() => {
     const nextRange = defaultExpenseDateRange(monthId);
@@ -334,13 +278,9 @@ export default function FinancePage() {
     rangeStart.setHours(0, 0, 0, 0);
     rangeEnd.setHours(23, 59, 59, 999);
 
-    const matches = transactions.filter((transaction) => {
+    const matches = trackedTransactions.filter((transaction) => {
       if (transaction.type !== 'expense') return false;
-      if (transaction.date < rangeStart || transaction.date > rangeEnd) return false;
-      if (transactionAccountFilter !== 'all' && !transactionTouchesAccount(transaction, transactionAccountFilter)) {
-        return false;
-      }
-      return true;
+      return transaction.date >= rangeStart && transaction.date <= rangeEnd;
     });
 
     return {
@@ -349,7 +289,7 @@ export default function FinancePage() {
       startLabel: formatDateShort(rangeStart),
       endLabel: formatDateShort(rangeEnd),
     };
-  }, [expenseRangeEnd, expenseRangeStart, transactionAccountFilter, transactions]);
+  }, [expenseRangeEnd, expenseRangeStart, trackedTransactions]);
 
   function clearComposeParam() {
     if (searchParams.get('compose')) router.replace(pathname);
@@ -358,15 +298,13 @@ export default function FinancePage() {
   function closeModal() {
     setModalOpen(false);
     setEditingTransaction(null);
-    setModalPresetAccount(undefined);
     clearComposeParam();
   }
 
-  function openCreate(type: TransactionType, options?: { account?: FinanceAccount }) {
+  function openCreate(type: TransactionListType) {
     setEditingTransaction(null);
     setModalMode('create');
     setDefaultType(type);
-    setModalPresetAccount(options?.account);
     setModalOpen(true);
   }
 
@@ -374,10 +312,8 @@ export default function FinancePage() {
     setEditingTransaction(transaction);
     setModalMode(mode);
     setDefaultType(transaction.type);
-    setModalPresetAccount(undefined);
     setModalOpen(true);
   }
-
 
   async function onDeleteTransaction() {
     if (!user || !pendingDelete) return;
@@ -395,12 +331,10 @@ export default function FinancePage() {
 
   function onExportCsv() {
     const rows: string[][] = [
-      ['date', 'type', 'account', 'to_account', 'category', 'note', 'amount'],
+      ['date', 'type', 'category', 'note', 'amount'],
       ...filteredTransactions.map((transaction) => [
         dateKeyLocal(transaction.date),
         transaction.type,
-        transaction.account ?? '',
-        transaction.toAccount ?? '',
         transaction.category,
         transaction.note,
         String(transaction.amount),
@@ -422,7 +356,6 @@ export default function FinancePage() {
   function onResetTransactionFilters() {
     setTransactionMonthFilter('all');
     setTransactionTypeFilter('all');
-    setTransactionAccountFilter('all');
     setTransactionCategoryFilter('all');
     setTransactionQuery('');
   }
@@ -430,7 +363,6 @@ export default function FinancePage() {
   const hasActiveTransactionFilters =
     transactionMonthFilter !== 'all' ||
     transactionTypeFilter !== 'all' ||
-    transactionAccountFilter !== 'all' ||
     transactionCategoryFilter !== 'all' ||
     transactionQuery.trim().length > 0;
 
@@ -458,39 +390,29 @@ export default function FinancePage() {
                 + Income
               </Button>
               <Button onClick={() => openCreate('expense')}>+ Expense</Button>
-              <Button variant="success" onClick={() => openCreate('transfer')}>
-                Transfer
-              </Button>
             </div>
 
-            <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
               <FinanceCell
                 title="Income"
                 value={formatIDRCompact(income)}
-                subtitle={`Cash in for ${monthLabel}`}
+                subtitle={`Total Income this month`}
                 toneClass="text-emerald-200"
                 className="border-emerald-400/10"
               />
               <FinanceCell
                 title="Expense"
                 value={formatIDRCompact(expense)}
-                subtitle={`Cash out for ${monthLabel}`}
+                subtitle={`Total Expense this month`}
                 toneClass="text-red-200"
                 className="border-red-400/10"
               />
               <FinanceCell
                 title="Net"
                 value={formatIDRCompact(net)}
-                subtitle="Pocket + Bank + E-Wallet + Personal"
+                subtitle={`Closing balance for ${monthLabel}`}
                 toneClass={net >= 0 ? 'text-sky-200' : 'text-amber-200'}
                 className="border-sky-400/10"
-              />
-              <FinanceCell
-                title="Entries"
-                value={String(monthTransactions.length)}
-                subtitle="Recorded this month"
-                toneClass="text-zinc-100"
-                className="border-white/10"
               />
             </div>
           </div>
@@ -520,71 +442,35 @@ export default function FinancePage() {
             <div className="mt-5 grid gap-3">
               <div className="rounded-[20px] border border-white/10 bg-zinc-950/80 px-4 py-3">
                 <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-500">
+                  Opening balance
+                </div>
+                <div className="mt-2 text-lg font-semibold text-zinc-100">{formatIDR(openingBalance)}</div>
+                <div className="mt-1 text-sm text-zinc-400">Carried from previous months.</div>
+              </div>
+              <div className="rounded-[20px] border border-white/10 bg-zinc-950/80 px-4 py-3">
+                <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-500">
+                  Month move
+                </div>
+                <div className={`mt-2 text-lg font-semibold ${monthChange >= 0 ? 'text-emerald-200' : 'text-red-200'}`}>
+                  {formatSignedCompact(monthChange)}
+                </div>
+                <div className="mt-1 text-sm text-zinc-400">Recorded income minus expense this month.</div>
+              </div>
+              <div className="rounded-[20px] border border-white/10 bg-zinc-950/80 px-4 py-3">
+                <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-500">
                   Total history
                 </div>
-                <div className="mt-2 text-lg font-semibold text-zinc-100">{transactions.length} entries</div>
+                <div className="mt-2 text-lg font-semibold text-zinc-100">
+                  {trackedTransactions.length} {trackedTransactions.length === 1 ? 'entry' : 'entries'}
+                </div>
               </div>
             </div>
           </div>
         </div>
       </section>
+
       {error ? <Alert variant="danger">{error}</Alert> : null}
 
-      <section>
-        <div>
-          <div className="mb-4 px-1">
-            <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-500">
-              Account balances
-            </div>
-            <h2 className="mt-2 text-xl font-semibold text-white">Four independent balances</h2>
-          </div>
-          <div className="grid gap-4 md:grid-cols-2 2xl:grid-cols-4">
-            {balancesByAccount.map(({ account, balance }) => {
-              const accountCount = transactions.filter((transaction) => transactionTouchesAccount(transaction, account)).length;
-              const monthChange = balanceByAccount(monthTransactions, account);
-
-              return (
-                <article
-                  key={account}
-                  className={`rounded-[28px] border p-5 shadow-[0_22px_55px_-38px_rgba(0,0,0,0.9)] ${financeAccountSurfaceClass(account)}`}>
-                  <div>
-                    <div className="flex items-start justify-between gap-3">
-                      <span
-                        className={`rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] ${financeAccountBadgeClass(account)}`}>
-                        {financeAccountLabel(account)}
-                      </span>
-                      <span className="text-[11px] font-medium uppercase tracking-[0.16em] text-zinc-500">
-                        {accountCount} {accountCount === 1 ? 'entry' : 'entries'}
-                      </span>
-                    </div>
-
-                    <div className={`mt-6 text-3xl font-semibold tracking-tight ${financeAccountToneClass(account, balance)}`}>
-                      {formatIDR(balance)}
-                    </div>
-
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      className="mt-5 w-full"
-                      onClick={() => openCreate('income', { account })}>
-                      Add funds
-                    </Button>
-
-                    <div className="mt-6 flex items-center justify-between gap-3 border-t border-white/10 pt-4 text-xs text-zinc-400">
-                      <span className={monthChange === 0 ? 'text-zinc-500' : 'text-zinc-300'}>
-                        Month move {formatSignedCompact(monthChange)}
-                      </span>
-                      <span className={balance < 0 ? 'text-red-200' : 'text-zinc-300'}>
-                        {balance < 0 ? 'Negative balance' : 'Tracked balance'}
-                      </span>
-                    </div>
-                  </div>
-                </article>
-              );
-            })}
-          </div>
-        </div>
-      </section>
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1.05fr)_minmax(320px,.95fr)]">
         <section className="app-surface overflow-hidden border-white/10 bg-[linear-gradient(180deg,rgba(20,20,22,0.92),rgba(9,9,11,0.98))]">
           <div className="app-panel-header">
@@ -608,11 +494,7 @@ export default function FinancePage() {
             </div>
           </div>
           <div className="px-5 py-5 sm:px-6">
-            <CumulativeCashflowChart
-              monthId={monthId}
-              transactions={transactions}
-              range={cashflowRange}
-            />
+            <CumulativeCashflowChart monthId={monthId} transactions={trackedTransactions} range={cashflowRange} />
           </div>
         </section>
 
@@ -629,19 +511,19 @@ export default function FinancePage() {
         </section>
       </div>
 
-
       <section className="app-surface overflow-hidden border-white/10 bg-[linear-gradient(180deg,rgba(20,20,22,0.92),rgba(9,9,11,0.98))]">
         <div className="app-panel-header">
           <div>
-            <div className="text-sm font-semibold">Monthly net trend</div>
-            <div className="mt-1 text-xs text-zinc-500">Last 6 months monthly net.</div>
+            <div className="text-sm font-semibold">Monthly balance trend</div>
+            <div className="mt-1 text-xs text-zinc-500">
+              Closing balance after carry-over for the last 6 months.
+            </div>
           </div>
         </div>
         <div className="px-5 py-5 sm:px-6">
-          <MonthlyNetChart monthId={monthId} transactions={transactions} rangeMonths={6} />
+          <MonthlyNetChart monthId={monthId} transactions={trackedTransactions} rangeMonths={6} />
         </div>
       </section>
-
 
       <section className="app-surface overflow-hidden border-white/10 bg-[linear-gradient(180deg,rgba(20,20,22,0.92),rgba(9,9,11,0.98))]">
         <div className="app-panel-header">
@@ -651,7 +533,7 @@ export default function FinancePage() {
           </div>
         </div>
 
-        <div className="grid gap-3 border-t border-white/10 px-4 py-4 sm:px-5 lg:grid-cols-[160px_140px_160px_180px_minmax(0,1fr)_auto] lg:items-end">
+        <div className="grid gap-3 border-t border-white/10 px-4 py-4 sm:px-5 lg:grid-cols-[160px_140px_180px_minmax(0,1fr)_auto] lg:items-end">
           <Select
             label="Month"
             value={transactionMonthFilter}
@@ -666,22 +548,10 @@ export default function FinancePage() {
           <Select
             label="Type"
             value={transactionTypeFilter}
-            onChange={(e) => setTransactionTypeFilter(e.target.value as 'all' | TransactionType)}>
+            onChange={(e) => setTransactionTypeFilter(e.target.value as 'all' | TransactionListType)}>
             <option value="all">All types</option>
             <option value="income">Income</option>
             <option value="expense">Expense</option>
-            <option value="transfer">Transfer</option>
-          </Select>
-          <Select
-            label="Account"
-            value={transactionAccountFilter}
-            onChange={(e) => setTransactionAccountFilter(e.target.value as 'all' | FinanceAccount)}>
-            <option value="all">All accounts</option>
-            {FINANCE_ACCOUNT_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
           </Select>
           <Select
             label="Category"
@@ -698,7 +568,7 @@ export default function FinancePage() {
             label="Search"
             value={transactionQuery}
             onChange={(e) => setTransactionQuery(e.target.value)}
-            placeholder="Category, account, or note..."
+            placeholder="Category, type, or note..."
           />
           <div className="flex flex-wrap items-end gap-2">
             <Button
@@ -733,7 +603,6 @@ export default function FinancePage() {
                   {expenseRangeSummary.count === 1 ? 'entry' : 'entries'} from{' '}
                   {expenseRangeSummary.startLabel} to {expenseRangeSummary.endLabel}.
                 </div>
-                <div className="mt-1 text-xs text-zinc-500">{expenseRangeAccountLabel}</div>
               </div>
 
               <div className="grid gap-3 sm:grid-cols-2 lg:w-auto">
@@ -767,10 +636,11 @@ export default function FinancePage() {
                 <div key={transaction.id} className="px-4 py-3.5 sm:px-5 sm:py-4">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <div className="break-words text-[13px] font-semibold text-zinc-100 sm:text-sm">{transaction.category}</div>
+                      <div className="break-words text-[13px] font-semibold text-zinc-100 sm:text-sm">
+                        {transaction.category}
+                      </div>
                       <div className="mt-1 text-[11px] text-zinc-500 sm:text-xs">
-                        {formatDateShort(transaction.date)} • {transaction.type} •{' '}
-                        {transactionAccountSummary(transaction)}
+                        {formatDateShort(transaction.date)} • {transaction.type}
                       </div>
                     </div>
                     <div
@@ -799,12 +669,11 @@ export default function FinancePage() {
         </div>
 
         <div className="hidden overflow-x-auto md:block">
-          <table className="w-full min-w-[860px] table-auto">
+          <table className="w-full min-w-[760px] table-auto">
             <thead>
               <tr className="text-left text-xs font-semibold text-zinc-500">
                 <th className="px-5 py-3">Date</th>
                 <th className="px-5 py-3">Type</th>
-                <th className="px-5 py-3">Account</th>
                 <th className="px-5 py-3">Category</th>
                 <th className="px-5 py-3">Note</th>
                 <th className="px-5 py-3 text-right">Amount</th>
@@ -814,13 +683,13 @@ export default function FinancePage() {
             <tbody className="divide-y divide-zinc-800">
               {loading ? (
                 <tr>
-                  <td colSpan={7} className="px-5 py-4 text-sm text-zinc-400">
+                  <td colSpan={6} className="px-5 py-4 text-sm text-zinc-400">
                     Loading…
                   </td>
                 </tr>
               ) : filteredTransactions.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-5 py-4 text-sm text-zinc-400">
+                  <td colSpan={6} className="px-5 py-4 text-sm text-zinc-400">
                     No transactions yet.
                   </td>
                 </tr>
@@ -831,11 +700,6 @@ export default function FinancePage() {
                     <td className="px-5 py-4">
                       <span className={transactionTypeBadgeClass(transaction.type)}>
                         {transaction.type}
-                      </span>
-                    </td>
-                    <td className="px-5 py-4">
-                      <span className="rounded-md border border-zinc-800 bg-zinc-950/70 px-2 py-1 text-xs font-semibold text-zinc-200">
-                        {transactionAccountSummary(transaction)}
                       </span>
                     </td>
                     <td className="px-5 py-4 font-semibold">{transaction.category}</td>
@@ -864,6 +728,7 @@ export default function FinancePage() {
             </tbody>
           </table>
         </div>
+
         {filteredTransactions.length > 0 ? (
           <div className="flex flex-wrap items-center justify-between gap-3 border-t border-white/10 px-5 py-4 text-xs text-zinc-500">
             <div>
@@ -897,7 +762,6 @@ export default function FinancePage() {
           mode={modalMode}
           defaultType={defaultType}
           initialTransaction={editingTransaction}
-          presetAccount={modalPresetAccount}
         />
       ) : null}
 
@@ -922,22 +786,3 @@ export default function FinancePage() {
     </div>
   );
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

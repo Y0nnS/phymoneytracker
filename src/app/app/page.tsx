@@ -14,12 +14,12 @@ import { usePlannerBlocks } from '@/hooks/usePlannerBlocks';
 import { useTasks } from '@/hooks/useTasks';
 import { useTransactions } from '@/hooks/useTransactions';
 import { formatDateShort, formatDateTime, monthIdFromDate, todayDateId } from '@/lib/date';
-import { financeAccountLabel } from '@/lib/financeAccounts';
 import {
-  accountBalances as summarizeAccountBalances,
+  isTrackedTransaction,
   monthIdLabel,
+  monthlyFinanceSnapshot,
+  sortTransactionsNewestFirst,
   transactionsForMonth,
-  sumByType,
 } from '@/lib/insights';
 import { formatIDRCompact } from '@/lib/money';
 import {
@@ -33,7 +33,7 @@ import {
   sortTasks,
   taskStatusTone,
 } from '@/lib/productivity';
-import type { FinanceAccount, PlannerBlock } from '@/lib/types';
+import type { PlannerBlock } from '@/lib/types';
 
 function SectionCard({
   eyebrow,
@@ -112,38 +112,6 @@ function plannerBlockMinutes(block: PlannerBlock) {
   return Math.max(0, timeToMinutes(block.endTime) - timeToMinutes(block.startTime));
 }
 
-function bucketAccent(account: FinanceAccount) {
-  if (account === 'cash') {
-    return {
-      chip: 'border-amber-400/20 bg-amber-400/10 text-amber-100',
-      value: 'text-amber-100',
-      bar: 'bg-amber-300',
-    };
-  }
-
-  if (account === 'bank') {
-    return {
-      chip: 'border-sky-400/20 bg-sky-400/10 text-sky-100',
-      value: 'text-sky-100',
-      bar: 'bg-sky-300',
-    };
-  }
-
-  if (account === 'ewallet') {
-    return {
-      chip: 'border-emerald-400/20 bg-emerald-400/10 text-emerald-100',
-      value: 'text-emerald-100',
-      bar: 'bg-emerald-300',
-    };
-  }
-
-  return {
-    chip: 'border-violet-400/20 bg-violet-400/10 text-violet-100',
-    value: 'text-violet-100',
-    bar: 'bg-violet-300',
-  };
-}
-
 export default function WorkspacePage() {
   const { user } = useAuth();
   const monthId = React.useMemo(() => monthIdFromDate(new Date()), []);
@@ -201,26 +169,23 @@ export default function WorkspacePage() {
   const supportingNotes = noteDesk.slice(1, 5);
   const pinnedNotes = React.useMemo(() => notes.filter((note) => note.pinned).length, [notes]);
 
+  const trackedTransactions = React.useMemo(
+    () => sortTransactionsNewestFirst(transactions.filter((transaction) => isTrackedTransaction(transaction))),
+    [transactions],
+  );
   const monthTransactions = React.useMemo(
-    () => transactionsForMonth(transactions, monthId),
-    [transactions, monthId],
+    () => transactionsForMonth(trackedTransactions, monthId),
+    [trackedTransactions, monthId],
   );
-  const income = React.useMemo(() => sumByType(monthTransactions, 'income'), [monthTransactions]);
-  const expense = React.useMemo(() => sumByType(monthTransactions, 'expense'), [monthTransactions]);
-  const monthDelta = income - expense;
-  const balancesByAccount = React.useMemo(() => summarizeAccountBalances(transactions), [transactions]);
-  const net = React.useMemo(
-    () => balancesByAccount.reduce((sum, item) => sum + item.balance, 0),
-    [balancesByAccount],
+  const financeSnapshot = React.useMemo(
+    () => monthlyFinanceSnapshot(trackedTransactions, monthId),
+    [trackedTransactions, monthId],
   );
-  const maxBucketBalance = React.useMemo(
-    () => Math.max(...balancesByAccount.map((item) => Math.abs(item.balance)), 0),
-    [balancesByAccount],
-  );
-  const topBucket = React.useMemo(
-    () => balancesByAccount.slice().sort((a, b) => b.balance - a.balance)[0] ?? null,
-    [balancesByAccount],
-  );
+  const income = financeSnapshot.availableIncome;
+  const expense = financeSnapshot.expense;
+  const monthDelta = financeSnapshot.monthChange;
+  const net = financeSnapshot.closingBalance;
+  const openingBalance = financeSnapshot.openingBalance;
 
   const todayPlannerBlocks = React.useMemo(
     () => sortPlannerBlocks(blocks).filter((block) => block.date === todayId),
@@ -308,7 +273,7 @@ export default function WorkspacePage() {
               <StatTile
                 title="Net balance"
                 value={formatIDRCompact(net)}
-                subtitle="All tracked buckets combined."
+                subtitle="Current closing balance."
                 toneClass={net >= 0 ? 'text-emerald-200' : 'text-red-200'}
               />
               <StatTile
@@ -378,13 +343,13 @@ export default function WorkspacePage() {
                 </div>
                 <div className="rounded-[18px] border border-white/10 bg-white/[0.03] p-4">
                   <div className="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-500">
-                    Top bucket
+                    Carry-over
                   </div>
                   <div className="mt-2 text-lg font-semibold text-white">
-                    {topBucket ? financeAccountLabel(topBucket.account) : 'No data'}
+                    {formatIDRCompact(openingBalance)}
                   </div>
                   <div className="mt-1 text-sm text-zinc-400">
-                    {topBucket ? formatIDRCompact(topBucket.balance) : 'Waiting for tracked balances.'}
+                    Balance brought in from previous months.
                   </div>
                 </div>
               </div>
@@ -396,7 +361,7 @@ export default function WorkspacePage() {
       <SectionCard
         eyebrow="Finance"
         title="Finance command"
-        description={`A full-width finance view for ${currentMonthLabel}, with charts and balances separated so nothing collides.`}
+        description={`A full-width finance view for ${currentMonthLabel}, with simple monthly totals and carry-over balance.`}
         action={
           <Link
             href="/app/finance"
@@ -404,50 +369,49 @@ export default function WorkspacePage() {
             Open finance
           </Link>
         }>
-        <div className="grid gap-5 px-5 py-5 sm:px-6">
-          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-            <StatTile title="Income" value={formatIDRCompact(income)} subtitle="Cash in this month." toneClass="text-emerald-200" />
-            <StatTile title="Expense" value={formatIDRCompact(expense)} subtitle="Cash out this month." toneClass="text-red-200" />
-            <StatTile title="Net total" value={formatIDRCompact(net)} subtitle="Combined across all buckets." toneClass={net >= 0 ? 'text-sky-200' : 'text-red-200'} />
-            <StatTile title="Entries" value={String(monthTransactions.length)} subtitle="Recorded transactions this month." />
-          </div>
-
-          <div className="grid gap-5 xl:grid-cols-[minmax(0,1.35fr)_360px]">
-            <div className="min-w-0 rounded-[24px] border border-white/10 bg-black/20 px-4 py-4">
-              <MonthlyNetChart monthId={monthId} transactions={transactions} rangeMonths={6} />
+          <div className="grid gap-5 px-5 py-5 sm:px-6">
+            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+              <StatTile title="Income" value={formatIDRCompact(income)} subtitle="Carry-over plus income this month." toneClass="text-emerald-200" />
+              <StatTile title="Expense" value={formatIDRCompact(expense)} subtitle="Cash out this month." toneClass="text-red-200" />
+              <StatTile title="Net total" value={formatIDRCompact(net)} subtitle="Closing balance for the current month." toneClass={net >= 0 ? 'text-sky-200' : 'text-red-200'} />
+              <StatTile title="Entries" value={String(monthTransactions.length)} subtitle="Recorded income and expense entries." />
             </div>
 
-            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
-              {balancesByAccount.map(({ account, balance }) => {
-                const accent = bucketAccent(account);
-                const width =
-                  maxBucketBalance === 0
-                    ? 0
-                    : Math.max(14, Math.round((Math.abs(balance) / maxBucketBalance) * 100));
+            <div className="grid gap-5 xl:grid-cols-[minmax(0,1.35fr)_360px]">
+              <div className="min-w-0 rounded-[24px] border border-white/10 bg-black/20 px-4 py-4">
+                <MonthlyNetChart monthId={monthId} transactions={trackedTransactions} rangeMonths={6} />
+              </div>
 
-                return (
-                  <div key={account} className="rounded-[20px] border border-white/10 bg-black/20 px-4 py-4">
-                    <div className="flex items-center justify-between gap-3">
-                      <span className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] ${accent.chip}`}>
-                        {financeAccountLabel(account)}
-                      </span>
-                      <span className={`text-sm font-semibold ${balance < 0 ? 'text-red-200' : accent.value}`}>
-                        {formatIDRCompact(balance)}
-                      </span>
-                    </div>
-                    <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/5">
-                      <div className={`h-full rounded-full ${balance < 0 ? 'bg-red-400' : accent.bar}`} style={{ width: `${balance === 0 ? 0 : width}%` }} />
-                    </div>
+              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
+                <div className="rounded-[20px] border border-white/10 bg-black/20 px-4 py-4">
+                  <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-500">
+                    Opening balance
                   </div>
-                );
-              })}
+                  <div className="mt-3 text-2xl font-semibold tracking-tight text-zinc-100">
+                    {formatIDRCompact(openingBalance)}
+                  </div>
+                  <div className="mt-2 text-sm text-zinc-400">
+                    Balance carried from previous months.
+                  </div>
+                </div>
+                <div className="rounded-[20px] border border-white/10 bg-black/20 px-4 py-4">
+                  <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-500">
+                    Month move
+                  </div>
+                  <div className={`mt-3 text-2xl font-semibold tracking-tight ${monthDelta >= 0 ? 'text-emerald-200' : 'text-red-200'}`}>
+                    {formatIDRCompact(monthDelta)}
+                  </div>
+                  <div className="mt-2 text-sm text-zinc-400">
+                    Income minus expense for {currentMonthLabel}.
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-[24px] border border-white/10 bg-black/20 px-4 py-4">
+              <ExpenseByCategoryChart monthTransactions={monthTransactions} />
             </div>
           </div>
-
-          <div className="rounded-[24px] border border-white/10 bg-black/20 px-4 py-4">
-            <ExpenseByCategoryChart monthTransactions={monthTransactions} />
-          </div>
-        </div>
       </SectionCard>
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1.08fr)_minmax(320px,.92fr)]">

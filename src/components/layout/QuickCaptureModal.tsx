@@ -23,7 +23,7 @@ const ACTIONS = [
   {
     href: '/app/finance',
     title: 'Open finance',
-    description: 'Review bucket balances, monthly cashflow, and history.',
+    description: 'Review monthly totals, carry-over balance, and history.',
   },
 ];
 

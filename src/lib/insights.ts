@@ -1,6 +1,15 @@
-import { FINANCE_ACCOUNT_OPTIONS } from '@/lib/financeAccounts';
 import { addDays, formatDayLabel, monthIdFromDate } from '@/lib/date';
-import type { FinanceAccount, Transaction, TransactionType } from '@/lib/types';
+import type { Transaction, TransactionType } from '@/lib/types';
+
+export type MonthlyFinanceSnapshot = {
+  monthId: string;
+  openingBalance: number;
+  income: number;
+  expense: number;
+  availableIncome: number;
+  monthChange: number;
+  closingBalance: number;
+};
 
 function pad2(value: number) {
   return String(value).padStart(2, '0');
@@ -60,32 +69,93 @@ export function sumByType(transactions: Transaction[], type: TransactionType) {
     .reduce((sum, t) => sum + t.amount, 0);
 }
 
-export function transactionTouchesAccount(transaction: Transaction, account: FinanceAccount) {
-  if (transaction.type === 'transfer') {
-    return transaction.account === account || transaction.toAccount === account;
-  }
-
-  return transaction.account === account;
+export function isTrackedTransaction(transaction: Transaction) {
+  return transaction.type === 'income' || transaction.type === 'expense';
 }
 
-export function balanceByAccount(transactions: Transaction[], account: FinanceAccount) {
-  return transactions.reduce((sum, transaction) => {
-    if (transaction.type === 'transfer') {
-      if (transaction.account === account) sum -= transaction.amount;
-      if (transaction.toAccount === account) sum += transaction.amount;
-      return sum;
-    }
+function transactionNetAmount(transaction: Transaction) {
+  if (transaction.type === 'income') return transaction.amount;
+  if (transaction.type === 'expense') return -transaction.amount;
+  return 0;
+}
 
-    if (transaction.account !== account) return sum;
-    return transaction.type === 'income' ? sum + transaction.amount : sum - transaction.amount;
+function monthlyIncomeExpense(transactions: Transaction[]) {
+  const totals = new Map<string, { income: number; expense: number }>();
+
+  for (const transaction of transactions) {
+    if (!isTrackedTransaction(transaction)) continue;
+
+    const monthId = monthIdFromDate(transaction.date);
+    const entry = totals.get(monthId) ?? { income: 0, expense: 0 };
+
+    if (transaction.type === 'income') entry.income += transaction.amount;
+    else entry.expense += transaction.amount;
+
+    totals.set(monthId, entry);
+  }
+
+  return totals;
+}
+
+export function netBalance(transactions: Transaction[]) {
+  return transactions.reduce((sum, transaction) => sum + transactionNetAmount(transaction), 0);
+}
+
+export function openingBalanceForMonth(transactions: Transaction[], monthId: string) {
+  return transactions.reduce((sum, transaction) => {
+    if (!isTrackedTransaction(transaction)) return sum;
+    return monthIdFromDate(transaction.date) < monthId
+      ? sum + transactionNetAmount(transaction)
+      : sum;
   }, 0);
 }
 
-export function accountBalances(transactions: Transaction[]) {
-  return FINANCE_ACCOUNT_OPTIONS.map((option) => ({
-    account: option.value,
-    balance: balanceByAccount(transactions, option.value),
-  }));
+export function monthlyFinanceSnapshot(
+  transactions: Transaction[],
+  monthId: string,
+): MonthlyFinanceSnapshot {
+  const totals = monthlyIncomeExpense(transactions).get(monthId) ?? { income: 0, expense: 0 };
+  const openingBalance = openingBalanceForMonth(transactions, monthId);
+  const availableIncome = openingBalance + totals.income;
+  const closingBalance = availableIncome - totals.expense;
+
+  return {
+    monthId,
+    openingBalance,
+    income: totals.income,
+    expense: totals.expense,
+    availableIncome,
+    monthChange: totals.income - totals.expense,
+    closingBalance,
+  };
+}
+
+export function monthlyFinanceSnapshots(
+  transactions: Transaction[],
+  monthIds: string[],
+): MonthlyFinanceSnapshot[] {
+  if (monthIds.length === 0) return [];
+
+  const totals = monthlyIncomeExpense(transactions);
+  let openingBalance = openingBalanceForMonth(transactions, monthIds[0]);
+
+  return monthIds.map((monthId) => {
+    const entry = totals.get(monthId) ?? { income: 0, expense: 0 };
+    const availableIncome = openingBalance + entry.income;
+    const closingBalance = availableIncome - entry.expense;
+    const snapshot = {
+      monthId,
+      openingBalance,
+      income: entry.income,
+      expense: entry.expense,
+      availableIncome,
+      monthChange: entry.income - entry.expense,
+      closingBalance,
+    };
+
+    openingBalance = closingBalance;
+    return snapshot;
+  });
 }
 
 export function buildDailyCumulativeSeries(
@@ -209,26 +279,4 @@ export function lastNMonthIds(fromMonthId: string, count: number) {
     monthIds.push(monthIdFromDate(d));
   }
   return monthIds;
-}
-
-export function monthlyTotals(transactions: Transaction[], monthIds: string[]) {
-  const totals = new Map<string, { income: number; expense: number }>();
-  for (const tx of transactions) {
-    if (tx.type === 'transfer') continue;
-    const monthId = monthIdFromDate(tx.date);
-    const entry = totals.get(monthId) ?? { income: 0, expense: 0 };
-    if (tx.type === 'income') entry.income += tx.amount;
-    else entry.expense += tx.amount;
-    totals.set(monthId, entry);
-  }
-
-  return monthIds.map((monthId) => {
-    const entry = totals.get(monthId) ?? { income: 0, expense: 0 };
-    return {
-      monthId,
-      income: entry.income,
-      expense: entry.expense,
-      net: entry.income - entry.expense,
-    };
-  });
 }
